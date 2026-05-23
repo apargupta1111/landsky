@@ -1,53 +1,30 @@
 
-$newNodes = @'
-[
-  {
-    "id": "http-ctrl-in",
-    "type": "http in",
-    "z": "5cd3b4b96ddf7040",
-    "name": "Control HTTP In",
-    "url": "/smartlight/control",
-    "method": "post",
-    "upload": false,
-    "swaggerDoc": "",
-    "x": 280,
-    "y": 820,
-    "wires": [["http-ctrl-fn"]]
-  },
-  {
-    "id": "http-ctrl-fn",
-    "type": "function",
-    "z": "5cd3b4b96ddf7040",
-    "name": "Encode Control Cmd",
-    "func": "var cmd = msg.payload;\nif(typeof cmd === 'string') { cmd = JSON.parse(cmd); }\nvar method = cmd.method || 'setDimming';\nvar value  = Number(cmd.value) || 0;\nvar hexBytes;\nif(method === 'setDimming') {\n    var level = Math.max(0, Math.min(200, Math.round(value)));\n    hexBytes = Buffer.from([0x01, level]);\n} else if(method === 'setMaxCurrent') {\n    var pct = Math.max(10, Math.min(100, Math.round(value)));\n    hexBytes = Buffer.from([0x02, pct]);\n} else if(method === 'powerOn')  { hexBytes = Buffer.from([0x01, 200]); }\n  else if(method === 'powerOff')  { hexBytes = Buffer.from([0x01, 0]);   }\n  else if(method === 'resetDriver') { hexBytes = Buffer.from([0xFF]);     }\n  else { hexBytes = Buffer.from([0x01, 0]); }\nvar ttsPayload = JSON.stringify({ downlinks: [{ f_port: 10, frm_payload: hexBytes.toString('base64'), priority: 'NORMAL' }] });\nnode.log('Downlink: ' + ttsPayload);\nvar respMsg = { payload: JSON.stringify({ok:true, method:method, value:value}), res: msg.res, req: msg.req };\nvar ttsMsg  = { payload: ttsPayload };\nreturn [respMsg, ttsMsg];",
-    "outputs": 2,
-    "timeout": "",
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 520,
-    "y": 820,
-    "wires": [["http-ctrl-resp"], ["tts-downlink-2"]]
-  },
-  {
-    "id": "http-ctrl-resp",
-    "type": "http response",
-    "z": "5cd3b4b96ddf7040",
-    "name": "Control Response",
-    "statusCode": "200",
-    "headers": {"Content-Type": "application/json"},
-    "x": 780,
-    "y": 820,
-    "wires": []
-  }
-]
-'@
+# Get the raw JSON string of the flow
+$rawJson = Invoke-WebRequest -Uri "http://13.205.43.53:1880/flow/5cd3b4b96ddf7040" -Method GET | Select-Object -ExpandProperty Content
 
-$existing = Invoke-RestMethod -Uri "http://13.205.43.53:1880/flow/5cd3b4b96ddf7040" -Method GET
-$newNodesParsed = $newNodes | ConvertFrom-Json
-$existing.nodes += $newNodesParsed
+# New single-byte function code
+$newFunc = 'var cmd = msg.payload;\nif(typeof cmd === ''string'') { cmd = JSON.parse(cmd); }\n\nvar method = cmd.method || ''setDimming'';\nvar value  = Math.round(Number(cmd.value) || 0);\n\nvar byteVal;\nif      (method === ''setDimming'')    { byteVal = Math.max(0,  Math.min(100, value)); }\nelse if (method === ''setMaxCurrent'') { byteVal = Math.max(10, Math.min(100, value)); }\nelse if (method === ''powerOn'')       { byteVal = 100; }\nelse if (method === ''powerOff'')      { byteVal = 0;   }\nelse if (method === ''resetDriver'')   { byteVal = 255; }\nelse                                   { byteVal = 0;   }\n\nvar b64 = Buffer.from([byteVal]).toString(''base64'');\n\nvar ttsPayload = JSON.stringify({ downlinks: [{ f_port: 10, frm_payload: b64, priority: ''NORMAL'' }] });\nnode.log(''Downlink cmd='' + method + '' val='' + byteVal + '' hex=0x'' + byteVal.toString(16).toUpperCase() + '' b64='' + b64);\n\nvar respMsg = { payload: JSON.stringify({ok:true, method:method, value:byteVal}), res: msg.res, req: msg.req };\nvar ttsMsg  = { payload: ttsPayload };\nreturn [respMsg, ttsMsg];'
 
-$body = $existing | ConvertTo-Json -Depth 20
-$result = Invoke-RestMethod -Uri "http://13.205.43.53:1880/flow/5cd3b4b96ddf7040" -Method PUT -ContentType "application/json" -Body $body
-Write-Host "Deploy result: $($result | ConvertTo-Json)"
+# Parse JSON, find the node, update its func field
+$flow = $rawJson | ConvertFrom-Json
+
+$updated = $false
+for ($i = 0; $i -lt $flow.nodes.Count; $i++) {
+    if ($flow.nodes[$i].id -eq 'http-ctrl-fn') {
+        $flow.nodes[$i].func = $newFunc.Replace('\n', "`n")
+        $updated = $true
+        Write-Host "Updated node at index $i"
+        break
+    }
+}
+
+if (-not $updated) {
+    Write-Host "ERROR: http-ctrl-fn node not found!"
+    exit 1
+}
+
+# Serialize back and deploy
+$putBody = $flow | ConvertTo-Json -Depth 20 -Compress
+$result = Invoke-WebRequest -Uri "http://13.205.43.53:1880/flow/5cd3b4b96ddf7040" -Method PUT -ContentType "application/json" -Body $putBody
+Write-Host "Deploy HTTP status: $($result.StatusCode)"
+Write-Host "Deploy result: $($result.Content)"

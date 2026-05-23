@@ -144,15 +144,15 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                       <div>
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-[var(--text-secondary)]">Digital Dimming Level</span>
-                          <span className="data-font font-bold">{dimLevel} <span className="text-[var(--text-secondary)] text-xs">/ 200</span></span>
+                          <span className="data-font font-bold">{dimLevel} <span className="text-[var(--text-secondary)] text-xs">/ 100</span></span>
                         </div>
                         <input
-                          type="range" min="0" max="200" value={dimLevel}
+                          type="range" min="0" max="100" value={dimLevel}
                           onChange={(e) => setDimLevel(Number(e.target.value))}
                           className="w-full h-2 rounded-lg cursor-pointer accent-primary"
                         />
                         <div className="flex justify-between mt-2">
-                          <div className="text-xs text-[var(--text-secondary)]">{(dimLevel / 200 * 100).toFixed(0)}% brightness</div>
+                          <div className="text-xs text-[var(--text-secondary)]">{(dimLevel / 100 * 100).toFixed(0)}% brightness</div>
                           <button
                             onClick={handleDimApply}
                             disabled={ctrl.status === 'sending'}
