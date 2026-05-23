@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--accent-primary);
+  --color-secondary: var(--accent-secondary);
+  --color-error: var(--accent-error);
+  --color-warning: var(--accent-warning);
+}
+
+@layer base {
+  :root {
+    --bg-color: #f1f5f9;
+    --panel-bg: rgba(255, 255, 255, 0.7);
+    --panel-border: rgba(0, 0, 0, 0.1);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-primary: #0284c7;
+    --accent-secondary: #2563eb;
+    --accent-error: #dc2626;
+    --accent-warning: #d97706;
+    --glow-shadow: 0 0 15px rgba(2, 132, 199, 0.3);
+  }
+
+  .dark {
+    --bg-color: #020617;
+    --panel-bg: rgba(15, 23, 42, 0.6);
+    --panel-border: rgba(0, 229, 255, 0.2);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-primary: #00E5FF;
+    --accent-secondary: #3b82f6;
+    --accent-error: #ff4444;
+    --accent-warning: #ffaa00;
+    --glow-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.glass-panel {
+  background-color: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dark .glass-panel {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.glowing-border:hover {
+  box-shadow: var(--glow-shadow);
+  border-color: var(--accent-primary);
+}
+
+.text-glow {
+  text-shadow: 0 0 8px var(--accent-primary);
+}
+
+.data-font {
+  font-family: 'JetBrains Mono', monospace;
+}
