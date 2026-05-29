@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
 import { useTheme } from './hooks/useTheme';

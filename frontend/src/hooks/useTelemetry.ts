@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchTelemetry } from '../services/thingsboard';
-import type { TelemetryData } from '../services/thingsboard';
+import { fetchNodeRedTelemetry } from '../services/nodeRedTelemetry';
+import type { TelemetryData } from '../services/nodeRedTelemetry';
 
 interface UseTelemetryReturn {
   data: TelemetryData | null;
@@ -12,7 +12,8 @@ interface UseTelemetryReturn {
 
 const POLL_INTERVAL_MS = 5000; // 5-second live polling
 
-export function useTelemetry(deviceId: string | null | undefined): UseTelemetryReturn {
+// deviceId kept for API compatibility but Node-RED doesn't need it
+export function useTelemetry(_deviceId?: string | null): UseTelemetryReturn {
   const [data, setData] = useState<TelemetryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,10 @@ export function useTelemetry(deviceId: string | null | undefined): UseTelemetryR
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
-    if (!deviceId) return;
     setIsLoading(true);
     setError(null);
     try {
-      const result = await fetchTelemetry(deviceId);
+      const result = await fetchNodeRedTelemetry();
       setData(result);
       setLastUpdated(new Date());
     } catch (err: unknown) {
@@ -32,16 +32,15 @@ export function useTelemetry(deviceId: string | null | undefined): UseTelemetryR
     } finally {
       setIsLoading(false);
     }
-  }, [deviceId]);
+  }, []);
 
   useEffect(() => {
-    if (!deviceId) return;
     load();
     intervalRef.current = setInterval(load, POLL_INTERVAL_MS);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [deviceId, load]);
+  }, [load]);
 
   return { data, isLoading, error, lastUpdated, refresh: load };
 }

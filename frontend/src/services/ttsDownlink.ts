@@ -12,7 +12,7 @@
  *   Byte 1+: Parameters (if any)
  */
 
-import { ENDPOINTS, TTS_API_KEY, DEVICE_CONFIG } from '../config/endpoints';
+import { ENDPOINTS, TTS_API_KEY } from '../config/endpoints';
 
 // ─── Hex Encoders for MS51 Driver Commands ────────────────────────────────────
 
