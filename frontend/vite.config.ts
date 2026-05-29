@@ -10,12 +10,6 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      // ThingsBoard REST API — avoids CORS in the browser
-      '/tb-api': {
-        target: 'http://13.205.43.53:8080',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/tb-api/, ''),
-      },
       // TTS (The Things Stack) REST API — for direct downlink push
       '/tts-api': {
         target: 'http://13.205.43.53',

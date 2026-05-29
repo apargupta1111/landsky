@@ -9,7 +9,6 @@ interface Light {
   id: string;
   name: string;
   status: 'online' | 'warning' | 'error';
-  tbDeviceId?: string; // Optional — used only for telemetry polling
 }
 
 interface LightsDataProps {
@@ -24,9 +23,8 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
   const [dimMode, setDimMode] = useState('DALI');
   const [pendingReset, setPendingReset] = useState(false);
 
-  // Telemetry polling via ThingsBoard (optional — shows live data if tbDeviceId is set)
-  const tbId = light?.tbDeviceId ?? null;
-  const { data: telemetry, isLoading, error: telemetryError, lastUpdated, refresh } = useTelemetry(tbId);
+  // Telemetry polling — fetches live data from Node-RED every 5 seconds
+  const { data: telemetry, isLoading, error: telemetryError, lastUpdated, refresh } = useTelemetry();
 
   // MQTT control — publishes to smartlight/control topic (disabled; using TTS REST instead)
   const ctrl = useLightControl();
@@ -320,7 +318,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <ExtLink href={ENDPOINTS.nodered.base} label="Node-RED" sub="Flow Editor" />
                     <ExtLink href={ENDPOINTS.influx} label="InfluxDB" sub="Time-Series Store" />
-                    <ExtLink href={ENDPOINTS.tts} label="TTS Console" sub="LoRaWAN Server" />
+                    <ExtLink href={ENDPOINTS.tts.console} label="TTS Console" sub="LoRaWAN Server" />
                   </div>
                 </div>
               </div>

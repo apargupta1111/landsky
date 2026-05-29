@@ -4,7 +4,6 @@ import { AlertItem } from '../components/AlertItem';
 import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
-import { DEVICE_CONFIG } from '../config/endpoints';
 export function Dashboard() {
   const [isLightsListOpen, setIsLightsListOpen] = useState(false);
   const [activeLight, setActiveLight] = useState<any>(null);
@@ -62,10 +61,10 @@ export function Dashboard() {
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <DeviceCard id="SL-001" name="Downtown Ave" status="online"  brightness={85} power={240} onClick={() => handleDeviceClick({ id: 'SL-001', name: 'Downtown Ave', status: 'online',  tbDeviceId: DEVICE_CONFIG.tbDeviceId   })} />
-          <DeviceCard id="SL-002" name="Downtown Ave" status="online" brightness={100} power={310} onClick={() => handleDeviceClick({ id: 'SL-002', name: 'Downtown Ave', status: 'online',  tbDeviceId: DEVICE_CONFIG.tbDeviceId })} />
-          <DeviceCard id="SL-003" name="Central Plaza" status="warning" brightness={40} power={120} onClick={() => handleDeviceClick({ id: 'SL-003', name: 'Central Plaza', status: 'warning',  tbDeviceId: DEVICE_CONFIG.tbDeviceId })} />
-          <DeviceCard id="SL-004" name="North Bridge" status="error" brightness={0} power={0} onClick={() => handleDeviceClick({ id: 'SL-004', name: 'North Bridge', status: 'error',  tbDeviceId: DEVICE_CONFIG.tbDeviceId })} />
+          <DeviceCard id="SL-001" name="Downtown Ave"   status="online"  brightness={85}  power={240} onClick={() => handleDeviceClick({ id: 'SL-001', name: 'Downtown Ave',   status: 'online'  })} />
+          <DeviceCard id="SL-002" name="Downtown Ave"   status="online"  brightness={100} power={310} onClick={() => handleDeviceClick({ id: 'SL-002', name: 'Downtown Ave',   status: 'online'  })} />
+          <DeviceCard id="SL-003" name="Central Plaza"  status="warning" brightness={40}  power={120} onClick={() => handleDeviceClick({ id: 'SL-003', name: 'Central Plaza',  status: 'warning' })} />
+          <DeviceCard id="SL-004" name="North Bridge"   status="error"   brightness={0}   power={0}   onClick={() => handleDeviceClick({ id: 'SL-004', name: 'North Bridge',   status: 'error'   })} />
         </div>
       </div>
 
