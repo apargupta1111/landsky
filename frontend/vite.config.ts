@@ -8,21 +8,5 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  server: {
-    proxy: {
-      // TTS (The Things Stack) REST API — for direct downlink push
-      '/tts-api': {
-        target: 'http://13.205.43.53',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/tts-api/, ''),
-      },
-      // Node-RED HTTP endpoints
-      '/nr-api': {
-        target: 'http://13.205.43.53:1880',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/nr-api/, ''),
-      },
-    },
-  },
 })
 

@@ -29,7 +29,7 @@ export function encodeSetMaxCurrent(pct: number): string {
 }
 
 /** Power ON: set dimming to max (200) */
-export const POWER_ON_HEX  = '0100C8'; // cmd=01, level=200 (0xC8)
+export const POWER_ON_HEX = '0100C8'; // cmd=01, level=200 (0xC8)
 
 /** Power OFF: dim-to-off (level 0) */
 export const POWER_OFF_HEX = '010000'; // cmd=01, level=0
@@ -50,7 +50,7 @@ interface DownlinkResult {
 
 export async function sendControlCommand(method: string, value?: number): Promise<DownlinkResult> {
   try {
-    const res = await fetch('/nr-api/smartlight/control', {
+    const res = await fetch(`${ENDPOINTS.nodered.base}/smartlight/control`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ method, value: value ?? 0 }),
@@ -72,9 +72,9 @@ export async function sendControlCommand(method: string, value?: number): Promis
 // ─── High-Level Command API ───────────────────────────────────────────────────
 
 export const ttsCommands = {
-  setDimming:    (level: number)  => sendControlCommand('setDimming',    level),
-  setMaxCurrent: (pct: number)    => sendControlCommand('setMaxCurrent', pct),
-  powerOn:       ()               => sendControlCommand('powerOn'),
-  powerOff:      ()               => sendControlCommand('powerOff'),
-  resetDriver:   ()               => sendControlCommand('resetDriver'),
+  setDimming: (level: number) => sendControlCommand('setDimming', level),
+  setMaxCurrent: (pct: number) => sendControlCommand('setMaxCurrent', pct),
+  powerOn: () => sendControlCommand('powerOn'),
+  powerOff: () => sendControlCommand('powerOff'),
+  resetDriver: () => sendControlCommand('resetDriver'),
 };

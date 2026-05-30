@@ -18,13 +18,12 @@ export const MQTT_CONFIG = {
     status:    'smartlight/status',
   },
 };
-
+  
 // ─── API Endpoints ────────────────────────────────────────────────────────────
 export const ENDPOINTS = {
   tts: {
-    console: `http://${SERVER_IP}/console`,
-    // Downlink via TTS REST API — proxied to avoid CORS
-    downlink: `/tts-api/api/v3/as/applications/${encodeURIComponent('hbeon-app-001')}/devices/${encodeURIComponent('streetlight-01')}/down/push`,
+    console:  `http://${SERVER_IP}/console`,
+    downlink: `http://${SERVER_IP}/api/v3/as/applications/${encodeURIComponent('hbeon-app-001')}/devices/${encodeURIComponent('streetlight-01')}/down/push`,
   },
   nodered: { base: `http://${SERVER_IP}:1880` },
   grafana:  `http://${SERVER_IP}:3000`,
