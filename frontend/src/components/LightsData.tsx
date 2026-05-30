@@ -53,13 +53,13 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="glass-panel w-full max-w-7xl min-h-[85vh] rounded-2xl border glowing-border flex flex-col shadow-2xl dark:shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] relative my-auto"
+            className="glass-panel w-full max-w-7xl min-h-full md:min-h-[85vh] rounded-none md:rounded-2xl border glowing-border flex flex-col shadow-2xl dark:shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] relative my-auto"
           >
             {/* ── Header ─────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between p-6 border-b border-[var(--panel-border)] bg-[var(--bg-color)]/30 backdrop-blur-md rounded-t-2xl">
-              <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-start justify-between p-4 md:p-6 border-b border-[var(--panel-border)] bg-[var(--bg-color)]/30 backdrop-blur-md rounded-t-none md:rounded-t-2xl gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <div>
-                  <h2 className="text-3xl font-bold data-font">{light.id}</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold data-font">{light.id}</h2>
                   <div className="text-[var(--text-secondary)] text-sm">{light.name}</div>
                 </div>
 
@@ -73,9 +73,6 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                   {light.status.toUpperCase()}
                 </span>
 
-                
-               
-
                 {/* Last updated */}
                 {lastUpdated && (
                   <span className="text-xs text-[var(--text-secondary)] flex items-center">
@@ -83,16 +80,15 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                   </span>
                 )}
                 {isLoading && <RefreshCw className="w-4 h-4 animate-spin text-primary" />}
-                {telemetryError && <span className="text-xs text-error">{telemetryError}</span>}
+                {telemetryError && <span className="text-xs text-error truncate max-w-[180px]">{telemetryError}</span>}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 ml-auto">
                 <button onClick={refresh} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-primary/20 text-[var(--text-secondary)] hover:text-primary border border-[var(--panel-border)] transition-colors">
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
-              
                 <button onClick={onClose} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-error/20 hover:text-error transition-colors text-[var(--text-secondary)] border border-[var(--panel-border)]">
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </div>
             </div>
