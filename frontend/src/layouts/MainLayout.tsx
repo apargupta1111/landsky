@@ -13,8 +13,8 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Background Effects */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[150px]" />
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 dark:bg-primary/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-secondary/5 dark:bg-secondary/10 rounded-full blur-[150px]" />
         </div>
         
         <Topbar />

@@ -18,7 +18,7 @@
     --accent-secondary: #2563eb;
     --accent-error: #dc2626;
     --accent-warning: #d97706;
-    --glow-shadow: 0 0 15px rgba(2, 132, 199, 0.3);
+    --glow-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
   }
 
   .dark {
@@ -61,6 +61,10 @@
 }
 
 .text-glow {
+  text-shadow: none;
+}
+
+.dark .text-glow {
   text-shadow: 0 0 8px var(--accent-primary);
 }
 

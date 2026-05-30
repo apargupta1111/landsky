@@ -23,7 +23,7 @@ export function Sidebar() {
       <div className="p-6 flex items-center justify-between">
         {sidebarOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-xl tracking-wider text-primary">
-            NEXUS<span className="text-secondary text-glow">.OS</span>
+            LANDSKY
           </motion.div>
         )}
         <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">

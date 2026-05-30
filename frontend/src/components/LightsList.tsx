@@ -38,13 +38,13 @@ export function LightsList({ isOpen, onClose, onDeviceClick }: LightsListProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="glass-panel w-full max-w-7xl h-[85vh] rounded-2xl border glowing-border flex flex-col shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] overflow-hidden"
+            className="glass-panel w-full max-w-7xl h-[85vh] rounded-2xl border glowing-border flex flex-col shadow-2xl dark:shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] overflow-hidden"
           >
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 border-b border-[var(--panel-border)] bg-[var(--bg-color)]/30 backdrop-blur-md">
               <div className="flex items-center space-x-4 mb-4 md:mb-0">
                 <h2 className="text-2xl font-bold">Active Lights Directory</h2>
-                <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/50 shadow-[0_0_10px_var(--glow-shadow)]">
+                <span className="px-3 py-1 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 dark:border-primary/50 shadow-sm dark:shadow-[0_0_10px_var(--glow-shadow)]">
                   {DUMMY_LIGHTS.length} Nodes Found
                 </span>
               </div>

@@ -55,7 +55,7 @@ export function Dashboard() {
           <h3 className="font-bold text-xl">Device Control</h3>
           <button 
             onClick={() => setIsLightsListOpen(true)}
-            className="px-4 py-2 bg-primary/20 text-primary border border-primary rounded-lg text-sm font-bold shadow-[0_0_15px_var(--glow-shadow)] hover:bg-primary/30 transition-colors cursor-pointer"
+            className="px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary border border-primary rounded-lg text-sm font-bold shadow-md dark:shadow-[0_0_15px_var(--glow-shadow)] hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors cursor-pointer"
           >
             Manage Devices
           </button>

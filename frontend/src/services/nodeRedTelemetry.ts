@@ -1,10 +1,5 @@
-// ─── Node-RED Telemetry Service ───────────────────────────────────────────────
-// Fetches the latest uplink payload cached by Node-RED.
-// Node-RED flow: TTS MQTT uplink → Cache Last Uplink fn → global.lastTelemetry
-// HTTP GET: /smartlight/data → Serve Telemetry fn → returns JSON
-//
-// Vite proxy: /nr-api  →  http://13.205.43.53:1880
-// ─────────────────────────────────────────────────────────────────────────────
+
+import { ENDPOINTS } from '../config/endpoints';
 
 export interface TelemetryValue {
   ts: number;
@@ -12,42 +7,42 @@ export interface TelemetryValue {
 }
 
 export interface TelemetryData {
-  brightness_percent?:   TelemetryValue[];
-  output_current_mA?:    TelemetryValue[];
-  output_voltage_V?:     TelemetryValue[];
-  led_power_W?:          TelemetryValue[];
-  input_current_mA?:     TelemetryValue[];
-  input_voltage_V?:      TelemetryValue[];
-  input_power_W?:        TelemetryValue[];
-  input_frequency_Hz?:   TelemetryValue[];
-  internal_temp_C?:      TelemetryValue[];
-  lamp_on_time_hours?:   TelemetryValue[];
+  brightness_percent?: TelemetryValue[];
+  output_current_mA?: TelemetryValue[];
+  output_voltage_V?: TelemetryValue[];
+  led_power_W?: TelemetryValue[];
+  input_current_mA?: TelemetryValue[];
+  input_voltage_V?: TelemetryValue[];
+  input_power_W?: TelemetryValue[];
+  input_frequency_Hz?: TelemetryValue[];
+  internal_temp_C?: TelemetryValue[];
+  lamp_on_time_hours?: TelemetryValue[];
   operating_time_hours?: TelemetryValue[];
-  power_factor?:         TelemetryValue[];
-  rssi?:                 TelemetryValue[];
-  snr?:                  TelemetryValue[];
+  power_factor?: TelemetryValue[];
+  rssi?: TelemetryValue[];
+  snr?: TelemetryValue[];
   [key: string]: TelemetryValue[] | undefined;
 }
 
 // Raw shape returned by Node-RED /smartlight/data
 interface NodeRedPayload {
-  brightness_percent?:   number | null;
-  output_current_mA?:    number | null;
-  output_voltage_V?:     number | null;
-  led_power_W?:          number | null;
-  input_current_mA?:     number | null;
-  input_voltage_V?:      number | null;
-  input_power_W?:        number | null;
-  input_frequency_Hz?:   number | null;
-  internal_temp_C?:      number | null;
-  lamp_on_time_hours?:   number | null;
+  brightness_percent?: number | null;
+  output_current_mA?: number | null;
+  output_voltage_V?: number | null;
+  led_power_W?: number | null;
+  input_current_mA?: number | null;
+  input_voltage_V?: number | null;
+  input_power_W?: number | null;
+  input_frequency_Hz?: number | null;
+  internal_temp_C?: number | null;
+  lamp_on_time_hours?: number | null;
   operating_time_hours?: number | null;
-  power_factor?:         number | null;
-  rssi?:                 number | null;
-  snr?:                  number | null;
-  ts?:                   number;
-  device_id?:            string;
-  fault_status?:         string | null;
+  power_factor?: number | null;
+  rssi?: number | null;
+  snr?: number | null;
+  ts?: number;
+  device_id?: string;
+  fault_status?: string | null;
 }
 
 /**
@@ -57,7 +52,7 @@ interface NodeRedPayload {
 export async function fetchNodeRedTelemetry(): Promise<TelemetryData> {
   let res: Response;
   try {
-    res = await fetch('/nr-api/smartlight/data', {
+    res = await fetch(`${ENDPOINTS.nodered.base}/smartlight/data`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
     });
@@ -97,20 +92,20 @@ export async function fetchNodeRedTelemetry(): Promise<TelemetryData> {
     [{ ts, value: v !== null && v !== undefined ? String(v) : '–' }];
 
   return {
-    brightness_percent:   make(d.brightness_percent),
-    output_current_mA:    make(d.output_current_mA),
-    output_voltage_V:     make(d.output_voltage_V),
-    led_power_W:          make(d.led_power_W),
-    input_current_mA:     make(d.input_current_mA),
-    input_voltage_V:      make(d.input_voltage_V),
-    input_power_W:        make(d.input_power_W),
-    input_frequency_Hz:   make(d.input_frequency_Hz),
-    internal_temp_C:      make(d.internal_temp_C),
-    lamp_on_time_hours:   make(d.lamp_on_time_hours),
+    brightness_percent: make(d.brightness_percent),
+    output_current_mA: make(d.output_current_mA),
+    output_voltage_V: make(d.output_voltage_V),
+    led_power_W: make(d.led_power_W),
+    input_current_mA: make(d.input_current_mA),
+    input_voltage_V: make(d.input_voltage_V),
+    input_power_W: make(d.input_power_W),
+    input_frequency_Hz: make(d.input_frequency_Hz),
+    internal_temp_C: make(d.internal_temp_C),
+    lamp_on_time_hours: make(d.lamp_on_time_hours),
     operating_time_hours: make(d.operating_time_hours),
-    power_factor:         make(d.power_factor),
-    rssi:                 make(d.rssi),
-    snr:                  make(d.snr),
+    power_factor: make(d.power_factor),
+    rssi: make(d.rssi),
+    snr: make(d.snr),
   };
 }
 

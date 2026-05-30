@@ -18,7 +18,7 @@ interface LightsDataProps {
 }
 
 export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
-  const [dimLevel, setDimLevel] = useState(150);
+  const [dimLevel, setDimLevel] = useState(100);
   const [maxCurrentPct, setMaxCurrentPct] = useState(100);
   const [dimMode, setDimMode] = useState('DALI');
   const [pendingReset, setPendingReset] = useState(false);
@@ -53,7 +53,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="glass-panel w-full max-w-7xl min-h-[85vh] rounded-2xl border glowing-border flex flex-col shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] relative my-auto"
+            className="glass-panel w-full max-w-7xl min-h-[85vh] rounded-2xl border glowing-border flex flex-col shadow-2xl dark:shadow-[0_0_50px_rgba(var(--accent-primary),0.15)] relative my-auto"
           >
             {/* ── Header ─────────────────────────────────────────────── */}
             <div className="flex items-center justify-between p-6 border-b border-[var(--panel-border)] bg-[var(--bg-color)]/30 backdrop-blur-md rounded-t-2xl">
@@ -65,7 +65,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
 
                 {/* Status Badge */}
                 <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center ${
-                  light.status === 'online'  ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_10px_var(--glow-shadow)]'
+                  light.status === 'online'  ? 'bg-primary/10 dark:bg-primary/20 text-primary border-primary/30 dark:border-primary/50 shadow-sm dark:shadow-[0_0_10px_var(--glow-shadow)]'
                   : light.status === 'warning' ? 'bg-warning/20 text-warning border-warning/50'
                   : 'bg-error/20 text-error border-error/50'
                 }`}>
@@ -73,11 +73,8 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                   {light.status.toUpperCase()}
                 </span>
 
-                {/* Connection mode badge — TTS REST API for control, TB for telemetry */}
-                <span className="px-3 py-1 rounded-full text-xs font-bold border flex items-center bg-primary/10 text-primary border-primary/30">
-                  <Wifi className="w-3 h-3 mr-1" />
-                  TTS DIRECT
-                </span>
+                
+               
 
                 {/* Last updated */}
                 {lastUpdated && (
@@ -93,9 +90,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                 <button onClick={refresh} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-primary/20 text-[var(--text-secondary)] hover:text-primary border border-[var(--panel-border)] transition-colors">
                   <RefreshCw className="w-5 h-5" />
                 </button>
-                <a href={ENDPOINTS.grafana} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold transition-colors">
-                  Open Grafana ↗
-                </a>
+              
                 <button onClick={onClose} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-error/20 hover:text-error transition-colors text-[var(--text-secondary)] border border-[var(--panel-border)]">
                   <X className="w-6 h-6" />
                 </button>
@@ -142,15 +137,15 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                       <div>
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-[var(--text-secondary)]">Digital Dimming Level</span>
-                          <span className="data-font font-bold">{dimLevel} <span className="text-[var(--text-secondary)] text-xs">/ 200</span></span>
+                          <span className="data-font font-bold">{dimLevel} <span className="text-[var(--text-secondary)] text-xs">/ 100</span></span>
                         </div>
                         <input
-                          type="range" min="0" max="200" value={dimLevel}
+                          type="range" min="0" max="100" value={dimLevel}
                           onChange={(e) => setDimLevel(Number(e.target.value))}
                           className="w-full h-2 rounded-lg cursor-pointer accent-primary"
                         />
                         <div className="flex justify-between mt-2">
-                          <div className="text-xs text-[var(--text-secondary)]">{(dimLevel / 200 * 100).toFixed(0)}% brightness</div>
+                          <div className="text-xs text-[var(--text-secondary)]">{(dimLevel / 100 * 100).toFixed(0)}% brightness</div>
                           <button
                             onClick={handleDimApply}
                             disabled={ctrl.status === 'sending'}
@@ -162,7 +157,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                       </div>
 
                       {/* Max Current */}
-                      <div>
+                      {/* <div>
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-[var(--text-secondary)]">Max Current Limit</span>
                           <span className="data-font font-bold">{maxCurrentPct}%</span>
@@ -181,9 +176,9 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                             Set Current
                           </button>
                         </div>
-                      </div>
+                      </div> */}
 
-                      {/* Dimming Mode */}
+                      {/* Dimming Mode
                       <div>
                         <div className="text-sm text-[var(--text-secondary)] mb-2">Driver Dimming Mode</div>
                         <select
@@ -207,7 +202,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                             Set Mode
                           </button>
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* Quick Power */}
                       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--panel-border)]">
@@ -284,42 +279,7 @@ export function LightsData({ light, isOpen, onClose }: LightsDataProps) {
                     <DataBox icon={<Activity className="w-4 h-4" />}               title="Operating Time" value={tlv(telemetry, 'operating_time_hours', '–')} unit="hrs" />
                   </div>
 
-                  {/* System Info */}
-                  <div className="glass-panel p-5 rounded-xl border flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-black/5 dark:bg-white/5 rounded-lg">
-                        <Info className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-[var(--text-secondary)]">Model Information</div>
-                        <div className="font-bold text-sm">MS51FB9AE + KG200Z LoRa <span className="text-[var(--text-secondary)] font-normal text-xs">(IN865)</span></div>
-                      </div>
-                    </div>
-                    <Divider />
-                    <div>
-                      <div className="text-xs text-[var(--text-secondary)]">Driver Operating Time</div>
-                      <div className="font-bold data-font">{tlv(telemetry, 'operating_time_hours', '–')} <span className="text-xs text-[var(--text-secondary)] font-sans">hrs</span></div>
-                    </div>
-                    <Divider />
-                    <div>
-                      <div className="text-xs text-[var(--text-secondary)]">Signal (RSSI / SNR)</div>
-                      <div className="font-bold data-font text-sm">
-                        {tlv(telemetry, 'rssi', '–')} dBm / {tlv(telemetry, 'snr', '–')} dB
-                      </div>
-                    </div>
-                    <Divider />
-                    <div>
-                      <div className="text-xs text-[var(--text-secondary)]">Device EUI</div>
-                      <div className="font-bold data-font text-sm">2CF7F110 62600283</div>
-                    </div>
-                  </div>
-
-                  {/* External Links */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <ExtLink href={ENDPOINTS.nodered.base} label="Node-RED" sub="Flow Editor" />
-                    <ExtLink href={ENDPOINTS.influx} label="InfluxDB" sub="Time-Series Store" />
-                    <ExtLink href={ENDPOINTS.tts.console} label="TTS Console" sub="LoRaWAN Server" />
-                  </div>
+                
                 </div>
               </div>
             </div>
