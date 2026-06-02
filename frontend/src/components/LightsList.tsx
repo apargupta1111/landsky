@@ -1,27 +1,47 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search } from 'lucide-react';
 import { DeviceCard } from './DeviceCard';
+import { DEVICE_CONFIG } from '../config/endpoints';
+import type { TelemetryData } from '../services/nodeRedTelemetry';
 
 interface LightsListProps {
   isOpen: boolean;
   onClose: () => void;
   onDeviceClick: (light: any) => void;
+  telemetry: TelemetryData | null;
+  deviceStatus: 'online' | 'warning' | 'error';
+  brightness: number;
+  power: number;
 }
 
-const DUMMY_LIGHTS = [
-  { id: 'SL-001', name: 'Downtown Ave', status: 'online', brightness: 85, power: 240 },
-  { id: 'SL-002', name: 'Downtown Ave', status: 'online', brightness: 100, power: 310 },
-  { id: 'SL-003', name: 'Central Plaza', status: 'warning', brightness: 40, power: 120 },
-  { id: 'SL-004', name: 'North Bridge', status: 'error', brightness: 0, power: 0 },
-  { id: 'SL-005', name: 'West End', status: 'online', brightness: 75, power: 190 },
-  { id: 'SL-006', name: 'East Side', status: 'online', brightness: 90, power: 260 },
-  { id: 'SL-007', name: 'Harbor Park', status: 'warning', brightness: 50, power: 140 },
-  { id: 'SL-008', name: 'Main Street', status: 'online', brightness: 100, power: 300 },
-  { id: 'SL-009', name: 'Financial District', status: 'online', brightness: 80, power: 220 },
-  { id: 'SL-010', name: 'Stadium Rd', status: 'online', brightness: 100, power: 320 },
-] as const;
+export function LightsList({
+  isOpen,
+  onClose,
+  onDeviceClick,
+  telemetry,
+  deviceStatus,
+  brightness,
+  power,
+}: LightsListProps) {
+  const [query, setQuery] = useState('');
 
-export function LightsList({ isOpen, onClose, onDeviceClick }: LightsListProps) {
+  const realDevices = [
+    {
+      id:         DEVICE_CONFIG.endDeviceId,
+      name:       'Streetlight Node',
+      status:     deviceStatus,
+      brightness,
+      power,
+    },
+  ];
+
+  const filtered = realDevices.filter(
+    (d) =>
+      d.id.toLowerCase().includes(query.toLowerCase()) ||
+      d.name.toLowerCase().includes(query.toLowerCase()),
+  );
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -44,7 +64,7 @@ export function LightsList({ isOpen, onClose, onDeviceClick }: LightsListProps) 
               <div className="flex items-center space-x-3 min-w-0">
                 <h2 className="text-lg md:text-2xl font-bold truncate">Active Lights Directory</h2>
                 <span className="px-2 py-0.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 dark:border-primary/50 shadow-sm dark:shadow-[0_0_10px_var(--glow-shadow)] shrink-0">
-                  {DUMMY_LIGHTS.length} Nodes
+                  {filtered.length} Node{filtered.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -53,6 +73,8 @@ export function LightsList({ isOpen, onClose, onDeviceClick }: LightsListProps) 
                   <Search className="w-4 h-4 text-[var(--text-secondary)] mr-2 shrink-0" />
                   <input
                     type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search by ID or location..."
                     className="bg-transparent border-none outline-none text-sm w-full placeholder-[var(--text-secondary)] text-[var(--text-primary)]"
                   />
@@ -68,25 +90,32 @@ export function LightsList({ isOpen, onClose, onDeviceClick }: LightsListProps) 
 
             {/* Grid List */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-hide bg-[var(--bg-color)]/10">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {DUMMY_LIGHTS.map((light, index) => (
-                  <motion.div
-                    key={light.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <DeviceCard
-                      id={light.id}
-                      name={light.name}
-                      status={light.status}
-                      brightness={light.brightness}
-                      power={light.power}
-                      onClick={() => onDeviceClick(light)}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+              {filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-[var(--text-secondary)] text-sm text-center gap-3">
+                  <span className="text-3xl">🔍</span>
+                  <span>No devices match "{query}"</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                  {filtered.map((light, index) => (
+                    <motion.div
+                      key={light.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <DeviceCard
+                        id={light.id}
+                        name={light.name}
+                        status={light.status}
+                        brightness={light.brightness}
+                        power={light.power}
+                        onClick={() => onDeviceClick(light)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

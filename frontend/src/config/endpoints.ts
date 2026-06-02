@@ -36,6 +36,16 @@ export const DEVICE_CONFIG = {
   endDeviceId: 'streetlight-01',
 };
 
+// ─── Known Device Locations ───────────────────────────────────────────────────
+// Update lat/lng if the physical device moves.
+export const DEVICE_LOCATIONS: Record<string, { lat: number; lng: number; label: string }> = {
+  'streetlight-01': {
+    lat:   28.4859,
+    lng:   77.5342,
+    label: 'Plot B-6/5, Surajpur Site V — Greater Noida, UP 201306',
+  },
+};
+
 // ─── TTS API Keys ─────────────────────────────────────────────────────────────
 // downlink-key: Write downlink traffic — used to push LoRaWAN downlinks from the UI
 export const TTS_API_KEY = 'EOSMYP45ZVPEMUIN5SYJBV5QHJN2A45ZLIQPTBA.266MD3YHDERW6SCKHUF7XSSPDUUL6RNJ7JULIMZWOQ2O7HFKZA';
