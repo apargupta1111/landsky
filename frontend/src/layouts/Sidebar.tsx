@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Map as MapIcon, Zap, Activity, Settings, Menu, X } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { ComingSoon } from '../components/ComingSoon';
+import { CityMap } from '../components/CityMap';
 
 function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
   return (
@@ -46,6 +47,8 @@ export function Sidebar() {
   const openComingSoon = (name: string) => setComingSoonPage(name);
   const closeComingSoon = () => setComingSoonPage(null);
 
+  const [cityMapOpen, setCityMapOpen] = useState(false);
+
   const sidebarContent = (
     <>
       {/* Header */}
@@ -77,7 +80,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-1 mt-2 overflow-hidden">
         <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Overview"    active       sidebarOpen={sidebarOpen} />
-        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="City Map"    sidebarOpen={sidebarOpen} onClick={() => openComingSoon('City Map')} />
+        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="City Map"    sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
         <NavItem icon={<Zap            className="w-5 h-5" />} label="Energy Grid" sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Energy Grid')} />
         <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Analytics')} />
         <NavItem icon={<Settings       className="w-5 h-5" />} label="Settings"    sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Settings')} />
@@ -134,6 +137,9 @@ export function Sidebar() {
         pageName={comingSoonPage ?? ''}
         onClose={closeComingSoon}
       />
+
+      {/* City Map overlay */}
+      <CityMap isOpen={cityMapOpen} onClose={() => setCityMapOpen(false)} />
     </>
   );
 }

@@ -1,12 +1,13 @@
 interface KpiCardProps {
   title: string;
   value: string;
-  trend: string;
-  trendUp: boolean;
+  trend?: string;
+  trendUp?: boolean;
   onClick?: () => void;
+  sub?: string;
 }
 
-export function KpiCard({ title, value, trend, trendUp, onClick }: KpiCardProps) {
+export function KpiCard({ title, value, trend, trendUp, onClick, sub }: KpiCardProps) {
   return (
     <div 
       onClick={onClick}
@@ -15,9 +16,14 @@ export function KpiCard({ title, value, trend, trendUp, onClick }: KpiCardProps)
       <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-[100px] blur-xl pointer-events-none" />
       <div className="text-[var(--text-secondary)] text-sm font-medium mb-2">{title}</div>
       <div className="text-3xl font-bold data-font mb-4 text-glow">{value}</div>
-      <div className={`text-sm font-bold ${trendUp ? 'text-[#10b981]' : 'text-error'}`}>
-        {trend} vs last week
-      </div>
+      {trend && (
+        <div className={`text-sm font-bold ${trendUp ? 'text-[#10b981]' : 'text-error'}`}>
+          {trend} vs last week
+        </div>
+      )}
+      {sub && !trend && (
+        <div className="text-sm text-[var(--text-secondary)]">{sub}</div>
+      )}
     </div>
   );
 }
