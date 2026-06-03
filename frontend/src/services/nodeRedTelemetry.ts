@@ -47,20 +47,32 @@ interface NodeRedPayload {
 
 /**
  * Fetch the latest telemetry cached by Node-RED from TTS uplinks.
+ * If deviceId is given, tries /smartlight/{deviceId}/data first,
+ * then falls back to /smartlight/data.
  * Returns an empty object if no uplink has been received yet (HTTP 204).
  */
-export async function fetchNodeRedTelemetry(): Promise<TelemetryData> {
-  let res: Response;
-  try {
-    res = await fetch(`${ENDPOINTS.nodered.base}/smartlight/data`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[NodeRed] Network error:', msg);
-    throw new Error(`Cannot reach Node-RED: ${msg}`);
+export async function fetchNodeRedTelemetry(deviceId?: string): Promise<TelemetryData> {
+  // Build candidate URLs
+  const urls: string[] = deviceId
+    ? [
+        `${ENDPOINTS.nodered.base}/smartlight/${encodeURIComponent(deviceId)}/data`,
+        `${ENDPOINTS.nodered.base}/smartlight/data`,
+      ]
+    : [`${ENDPOINTS.nodered.base}/smartlight/data`];
+
+  let res: Response | null = null;
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      if (r.status === 404) continue; // try next URL
+      res = r;
+      break;
+    } catch {
+      // network error on this URL — try next
+    }
   }
+
+  if (!res) throw new Error('Cannot reach Node-RED telemetry endpoint');
 
   // 204 = Node-RED has not received any TTS uplink yet
   if (res.status === 204) {

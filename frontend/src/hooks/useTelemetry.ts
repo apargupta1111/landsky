@@ -12,8 +12,7 @@ interface UseTelemetryReturn {
 
 const POLL_INTERVAL_MS = 5000; // 5-second live polling
 
-// deviceId kept for API compatibility but Node-RED doesn't need it
-export function useTelemetry(_deviceId?: string | null): UseTelemetryReturn {
+export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
   const [data, setData] = useState<TelemetryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +23,7 @@ export function useTelemetry(_deviceId?: string | null): UseTelemetryReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await fetchNodeRedTelemetry();
+      const result = await fetchNodeRedTelemetry(deviceId ?? undefined);
       setData(result);
       setLastUpdated(new Date());
     } catch (err: unknown) {
@@ -32,7 +31,7 @@ export function useTelemetry(_deviceId?: string | null): UseTelemetryReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [deviceId]);
 
   useEffect(() => {
     load();

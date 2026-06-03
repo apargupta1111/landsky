@@ -1,44 +1,44 @@
 import { useState } from 'react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { KpiCard } from '../components/KpiCard';
 import { AlertItem } from '../components/AlertItem';
 import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
+import { AddLightModal } from '../components/AddLightModal';
 import { useTelemetry, tlv } from '../hooks/useTelemetry';
-import { DEVICE_CONFIG } from '../config/endpoints';
-import { RefreshCw } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
 
 export function Dashboard() {
-  const [isLightsListOpen, setIsLightsListOpen] = useState(false);
-  const [activeLight, setActiveLight] = useState<any>(null);
+  const [isLightsListOpen,  setIsLightsListOpen]  = useState(false);
+  const [isAddLightOpen,    setIsAddLightOpen]    = useState(false);
+  const [activeLight,       setActiveLight]       = useState<any>(null);
 
-  // ── Live telemetry from Node-RED ──────────────────────────────────────────
-  const { data: telemetry, isLoading, error: telemetryError, lastUpdated } = useTelemetry();
+  const devices = useAppStore((s) => s.devices);
 
-  // ── Derive device status from telemetry ───────────────────────────────────
-  const hasData       = !!telemetry && Object.keys(telemetry).length > 0;
-  const faultStatus   = (telemetry as any)?.fault_status?.[0]?.value;
-  const deviceStatus: 'online' | 'warning' | 'error' =
-    !hasData          ? 'error'
+  // Primary device telemetry (first / seed device)
+  const primaryDevice = devices[0];
+  const { data: telemetry, isLoading, error: telemetryError, lastUpdated } =
+    useTelemetry(primaryDevice?.ttsDeviceId);
+
+  // ── Derive primary device status ──────────────────────────────────────────
+  const hasData      = !!telemetry && Object.keys(telemetry).length > 0;
+  const faultStatus  = (telemetry as any)?.fault_status?.[0]?.value;
+  const primaryStatus: 'online' | 'warning' | 'error' =
+    !hasData        ? 'error'
     : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
     : 'online';
 
-  // ── KPI values derived from live telemetry ────────────────────────────────
-  const activeLights   = hasData ? 1 : 0;
-  const rawPower       = tlv(telemetry, 'led_power_W', '–');
-  const totalPowerStr  = rawPower === '–' ? '– W' : `${rawPower} W`;
-  const rawUptime      = tlv(telemetry, 'operating_time_hours', '–');
-  const uptimeStr      = rawUptime === '–' ? '–' : `${rawUptime} hrs`;
-
-  // ── Device card values ────────────────────────────────────────────────────
   const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
   const power      = parseFloat(tlv(telemetry, 'led_power_W', '0'))        || 0;
 
-  const realDevice = {
-    id:   DEVICE_CONFIG.endDeviceId,
-    name: 'Streetlight Node',
-    status: deviceStatus,
-  };
+  // ── KPI aggregates ────────────────────────────────────────────────────────
+  // Only primary device has live telemetry; others are "registered but pending"
+  const activeLights  = hasData ? 1 : 0;
+  const rawUptime     = tlv(telemetry, 'operating_time_hours', '–');
+  const uptimeStr     = rawUptime === '–' ? '–' : `${rawUptime} hrs`;
+  const rawPower      = tlv(telemetry, 'led_power_W', '–');
+  const totalPowerStr = rawPower === '–' ? '– W' : `${rawPower} W`;
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
 
@@ -85,15 +85,12 @@ export function Dashboard() {
         <div className="lg:col-span-2 glass-panel rounded-xl p-4 md:p-6 border flex flex-col glowing-border min-h-[280px] md:h-[400px]">
           <div className="flex justify-between items-center mb-4 md:mb-6">
             <h3 className="font-bold text-base md:text-lg">Live Telemetry</h3>
-            <div className="flex space-x-2">
-              <span className="flex items-center text-xs">
-                <span className="w-2 h-2 rounded-full bg-primary mr-2 shadow-[0_0_8px_var(--accent-primary)] animate-pulse" />
-                Live Stream
-              </span>
-            </div>
+            <span className="flex items-center text-xs">
+              <span className="w-2 h-2 rounded-full bg-primary mr-2 shadow-[0_0_8px_var(--accent-primary)] animate-pulse" />
+              Live Stream
+            </span>
           </div>
 
-          {/* Live telemetry data grid */}
           {hasData ? (
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto scrollbar-hide">
               {[
@@ -135,16 +132,24 @@ export function Dashboard() {
             {hasData ? (
               <>
                 <AlertItem
-                  id={DEVICE_CONFIG.endDeviceId}
-                  issue={deviceStatus === 'online' ? 'Device Online' : 'Fault Detected'}
+                  id={primaryDevice?.id ?? 'device'}
+                  issue={primaryStatus === 'online' ? 'Device Online' : 'Fault Detected'}
                   time={lastUpdated ? lastUpdated.toLocaleTimeString() : 'now'}
-                  type={deviceStatus === 'online' ? 'info' : 'error'}
+                  type={primaryStatus === 'online' ? 'info' : 'error'}
                 />
-                {tlv(telemetry, 'internal_temp_C') !== '–' && parseFloat(tlv(telemetry, 'internal_temp_C')) > 60 && (
-                  <AlertItem id={DEVICE_CONFIG.endDeviceId} issue="High Temperature" time="now" type="warning" />
+                {parseFloat(tlv(telemetry, 'internal_temp_C', '0')) > 60 && (
+                  <AlertItem id={primaryDevice?.id ?? 'device'} issue="High Temperature" time="now" type="warning" />
                 )}
-                {tlv(telemetry, 'rssi') !== '–' && parseFloat(tlv(telemetry, 'rssi')) < -110 && (
-                  <AlertItem id={DEVICE_CONFIG.endDeviceId} issue="Weak LoRa Signal" time="now" type="warning" />
+                {parseFloat(tlv(telemetry, 'rssi', '0')) < -110 && (
+                  <AlertItem id={primaryDevice?.id ?? 'device'} issue="Weak LoRa Signal" time="now" type="warning" />
+                )}
+                {devices.length > 1 && (
+                  <AlertItem
+                    id={`+${devices.length - 1} device${devices.length > 2 ? 's' : ''}`}
+                    issue="Registered — awaiting uplink"
+                    time="pending"
+                    type="warning"
+                  />
                 )}
               </>
             ) : (
@@ -160,39 +165,73 @@ export function Dashboard() {
       {/* ── Device Control ── */}
       <div className="mt-6 md:mt-8">
         <div className="flex justify-between items-center mb-4 md:mb-6">
-          <h3 className="font-bold text-lg md:text-xl">Device Control</h3>
-          <button
-            onClick={() => setIsLightsListOpen(true)}
-            className="px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 dark:bg-primary/20 text-primary border border-primary rounded-lg text-xs md:text-sm font-bold shadow-md dark:shadow-[0_0_15px_var(--glow-shadow)] hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            Manage Devices
-          </button>
+          <h3 className="font-bold text-lg md:text-xl">
+            Device Control
+            <span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">
+              ({devices.length} registered)
+            </span>
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsAddLightOpen(true)}
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary text-white border border-primary rounded-lg text-xs md:text-sm font-bold shadow-md hover:brightness-110 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Add Light
+            </button>
+            <button
+              onClick={() => setIsLightsListOpen(true)}
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 dark:bg-primary/20 text-primary border border-primary rounded-lg text-xs md:text-sm font-bold shadow-md dark:shadow-[0_0_15px_var(--glow-shadow)] hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Manage Devices
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-          <DeviceCard
-            id={realDevice.id}
-            name={realDevice.name}
-            status={realDevice.status}
-            brightness={brightness}
-            power={power}
-            onClick={() => handleDeviceClick(realDevice)}
-          />
-          {!hasData && (
-            <div className="glass-panel rounded-xl p-5 border border-dashed border-[var(--panel-border)] flex flex-col items-center justify-center text-[var(--text-secondary)] text-sm text-center gap-2 min-h-[140px]">
-              <span className="text-xl">📡</span>
-              <span>No additional devices detected</span>
-            </div>
+          {/* Primary device with live telemetry */}
+          {primaryDevice && (
+            <DeviceCard
+              id={primaryDevice.id}
+              name={primaryDevice.name}
+              status={primaryStatus}
+              brightness={brightness}
+              power={power}
+              onClick={() => handleDeviceClick({ ...primaryDevice, status: primaryStatus })}
+            />
           )}
+
+          {/* Additional registered devices (no live telemetry yet) */}
+          {devices.slice(1).map((dev) => (
+            <DeviceCard
+              key={dev.id}
+              id={dev.id}
+              name={dev.name}
+              status="error"
+              brightness={0}
+              power={0}
+              onClick={() => handleDeviceClick({ ...dev, status: 'error' })}
+            />
+          ))}
+
+          {/* "Add Light" placeholder card */}
+          <button
+            onClick={() => setIsAddLightOpen(true)}
+            className="glass-panel rounded-xl p-5 border border-dashed border-primary/40 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-primary min-h-[140px] group"
+          >
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-primary/50 group-hover:border-primary flex items-center justify-center transition-colors">
+              <Plus className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-bold">Add Light</span>
+          </button>
         </div>
       </div>
 
+      {/* ── Modals ── */}
       <LightsList
         isOpen={isLightsListOpen}
         onClose={() => setIsLightsListOpen(false)}
         onDeviceClick={handleDeviceClick}
-        telemetry={telemetry}
-        deviceStatus={deviceStatus}
+        primaryStatus={primaryStatus}
         brightness={brightness}
         power={power}
       />
@@ -201,6 +240,11 @@ export function Dashboard() {
         light={activeLight}
         isOpen={!!activeLight}
         onClose={() => setActiveLight(null)}
+      />
+
+      <AddLightModal
+        isOpen={isAddLightOpen}
+        onClose={() => setIsAddLightOpen(false)}
       />
     </>
   );

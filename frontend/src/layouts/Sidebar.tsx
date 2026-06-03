@@ -4,6 +4,8 @@ import { LayoutDashboard, Map as MapIcon, Zap, Activity, Settings, Menu, X } fro
 import { useAppStore } from '../store/useAppStore';
 import { ComingSoon } from '../components/ComingSoon';
 import { CityMap } from '../components/CityMap';
+import { Analytics } from '../components/Analytics';
+
 
 function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
   return (
@@ -24,7 +26,7 @@ function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
 }
 
 export function Sidebar() {
-  const { sidebarOpen, toggleSidebar, setSidebarOpen } = useAppStore();
+  const { sidebarOpen, toggleSidebar, setSidebarOpen, currentPage, setCurrentPage } = useAppStore();
   const [comingSoonPage, setComingSoonPage] = useState<string | null>(null);
 
   // Detect whether we're on a mobile/tablet breakpoint (< 1024px = lg)
@@ -47,7 +49,8 @@ export function Sidebar() {
   const openComingSoon = (name: string) => setComingSoonPage(name);
   const closeComingSoon = () => setComingSoonPage(null);
 
-  const [cityMapOpen, setCityMapOpen] = useState(false);
+  const [cityMapOpen,    setCityMapOpen]    = useState(false);
+  const [analyticsOpen,  setAnalyticsOpen]  = useState(false);
 
   const sidebarContent = (
     <>
@@ -79,11 +82,11 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-1 mt-2 overflow-hidden">
-        <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Overview"    active       sidebarOpen={sidebarOpen} />
-        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="City Map"    sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
-        <NavItem icon={<Zap            className="w-5 h-5" />} label="Energy Grid" sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Energy Grid')} />
-        <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Analytics')} />
-        <NavItem icon={<Settings       className="w-5 h-5" />} label="Settings"    sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Settings')} />
+        <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Overview"    active={currentPage === 'dashboard'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('dashboard')} />
+        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="City Map"    active={false}                      sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
+        <NavItem icon={<Zap            className="w-5 h-5" />} label="Energy Grid" active={false}                      sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Energy Grid')} />
+        <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   active={false}                      sidebarOpen={sidebarOpen} onClick={() => setAnalyticsOpen(true)} />
+        <NavItem icon={<Settings       className="w-5 h-5" />} label="Settings"    active={currentPage === 'settings'}  sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('settings')} />
       </nav>
     </>
   );
@@ -140,6 +143,9 @@ export function Sidebar() {
 
       {/* City Map overlay */}
       <CityMap isOpen={cityMapOpen} onClose={() => setCityMapOpen(false)} />
+
+      {/* Analytics overlay */}
+      <Analytics isOpen={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
     </>
   );
 }
