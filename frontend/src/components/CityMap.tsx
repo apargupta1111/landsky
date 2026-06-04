@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Wifi, WifiOff, AlertTriangle, Navigation } from 'lucide-react';
 import { useTelemetry, tlv } from '../hooks/useTelemetry';
-import { DEVICE_CONFIG, DEVICE_LOCATIONS } from '../config/endpoints';
 import { useAppStore } from '../store/useAppStore';
 
 interface CityMapProps {
@@ -10,31 +9,16 @@ interface CityMapProps {
   onClose: () => void;
 }
 
-// ── Build the list of all known devices with their locations ─────────────────
-function buildDevices(
-  status: 'online' | 'warning' | 'error',
-  brightness: number,
-  power: number,
-) {
-  return Object.entries(DEVICE_LOCATIONS).map(([id, loc]) => ({
-    id,
-    lat: loc.lat,
-    lng: loc.lng,
-    label: loc.label,
-    status: id === DEVICE_CONFIG.endDeviceId ? status : ('error' as const),
-    brightness: id === DEVICE_CONFIG.endDeviceId ? brightness : 0,
-    power: id === DEVICE_CONFIG.endDeviceId ? power : 0,
-  }));
-}
-
 export function CityMap({ isOpen, onClose }: CityMapProps) {
   const mapRef     = useRef<any>(null);
   const leafletRef = useRef<any>(null);
 
-  const isDarkMode = useAppStore((s) => s.isDarkMode);
+  const isDarkMode    = useAppStore((s) => s.isDarkMode);
+  const storeDevices  = useAppStore((s) => s.devices);
 
-  // Live telemetry
-  const { data: telemetry, lastUpdated } = useTelemetry();
+  // Live telemetry for primary device
+  const primaryDevice = storeDevices[0];
+  const { data: telemetry, lastUpdated } = useTelemetry(primaryDevice?.ttsDeviceId);
 
   const hasData      = !!telemetry && Object.keys(telemetry).length > 0;
   const faultStatus  = (telemetry as any)?.fault_status?.[0]?.value;
@@ -46,7 +30,18 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
   const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
   const power      = parseFloat(tlv(telemetry, 'led_power_W',        '0')) || 0;
 
-  const devices = buildDevices(deviceStatus, brightness, power);
+  // Merge store devices with live values
+  const devices = storeDevices.map((dev, i) => ({
+    id:         dev.id,
+    lat:        dev.lat,
+    lng:        dev.lng,
+    label:      dev.address,
+    name:       dev.name,
+    status:     i === 0 ? deviceStatus : ('error' as const),
+    brightness: i === 0 ? brightness   : 0,
+    power:      i === 0 ? power        : 0,
+  }));
+
   const active   = devices.filter((d) => d.status === 'online').length;
   const inactive = devices.filter((d) => d.status !== 'online').length;
 
@@ -179,7 +174,7 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
     // Small delay so the modal is fully rendered before measuring the container
     const tid = setTimeout(initMap, 120);
     return () => clearTimeout(tid);
-  }, [isOpen, isDarkMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, isDarkMode, storeDevices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update marker colours when telemetry changes without re-creating the map
   useEffect(() => {
