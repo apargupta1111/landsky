@@ -26,8 +26,7 @@ export const ENDPOINTS = {
     downlink: `http://${SERVER_IP}/api/v3/as/applications/${encodeURIComponent('hbeon-app-001')}/devices/${encodeURIComponent('streetlight-01')}/down/push`,
   },
   nodered: { base: `http://${SERVER_IP}:1880` },
-  grafana:  `http://${SERVER_IP}:3000`,
-  influx:   `http://${SERVER_IP}:8086`,
+
 };
 
 // ─── Device Config ────────────────────────────────────────────────────────────

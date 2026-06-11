@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Map as MapIcon, Zap, Activity, Settings, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Folder, Activity, Settings, Menu, X, Users, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { ComingSoon } from '../components/ComingSoon';
 import { CityMap } from '../components/CityMap';
-import { Analytics } from '../components/Analytics';
 
 
 function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
@@ -27,8 +25,6 @@ function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, setSidebarOpen, currentPage, setCurrentPage } = useAppStore();
-  const [comingSoonPage, setComingSoonPage] = useState<string | null>(null);
-
   // Detect whether we're on a mobile/tablet breakpoint (< 1024px = lg)
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 1024 : false
@@ -46,11 +42,7 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', handler);
   }, [setSidebarOpen]);
 
-  const openComingSoon = (name: string) => setComingSoonPage(name);
-  const closeComingSoon = () => setComingSoonPage(null);
-
-  const [cityMapOpen,    setCityMapOpen]    = useState(false);
-  const [analyticsOpen,  setAnalyticsOpen]  = useState(false);
+  const [cityMapOpen, setCityMapOpen] = useState(false);
 
   const sidebarContent = (
     <>
@@ -82,10 +74,12 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-1 mt-2 overflow-hidden">
-        <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Overview"    active={currentPage === 'dashboard'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('dashboard')} />
-        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="City Map"    active={false}                      sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
-        <NavItem icon={<Zap            className="w-5 h-5" />} label="Energy Grid" active={false}                      sidebarOpen={sidebarOpen} onClick={() => openComingSoon('Energy Grid')} />
-        <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   active={false}                      sidebarOpen={sidebarOpen} onClick={() => setAnalyticsOpen(true)} />
+        <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard"   active={currentPage === 'dashboard'}  sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('dashboard')} />
+        <NavItem icon={<Folder         className="w-5 h-5" />} label="Projects"    active={currentPage === 'projects'}   sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('projects')} />
+        <NavItem icon={<MapIcon        className="w-5 h-5" />} label="Live Map"    active={false}                       sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
+        <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   active={currentPage === 'analytics'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('analytics')} />
+        <NavItem icon={<AlertCircle    className="w-5 h-5" />} label="Faults"      active={currentPage === 'faults'}    sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('faults')} />
+        <NavItem icon={<Users          className="w-5 h-5" />} label="Organization" active={currentPage === 'organization'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('organization')} />
         <NavItem icon={<Settings       className="w-5 h-5" />} label="Settings"    active={currentPage === 'settings'}  sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('settings')} />
       </nav>
     </>
@@ -135,17 +129,7 @@ export function Sidebar() {
       )}
 
       {/* Coming Soon overlay */}
-      <ComingSoon
-        isOpen={!!comingSoonPage}
-        pageName={comingSoonPage ?? ''}
-        onClose={closeComingSoon}
-      />
-
-      {/* City Map overlay */}
       <CityMap isOpen={cityMapOpen} onClose={() => setCityMapOpen(false)} />
-
-      {/* Analytics overlay */}
-      <Analytics isOpen={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
     </>
   );
 }

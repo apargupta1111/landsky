@@ -14,7 +14,12 @@ export function Dashboard() {
   const [isAddLightOpen,    setIsAddLightOpen]    = useState(false);
   const [activeLight,       setActiveLight]       = useState<any>(null);
 
-  const devices = useAppStore((s) => s.devices);
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
+  const devices        = useAppStore((s) => s.devices);
+  const projects       = useAppStore((s) => s.projects);
+  const gateways       = useAppStore((s) => s.gateways);
+  const lights         = useAppStore((s) => s.lights);
+  const faults         = useAppStore((s) => s.faults);
 
   // Primary device telemetry (first / seed device)
   const primaryDevice = devices[0];
@@ -33,14 +38,28 @@ export function Dashboard() {
   const power      = parseFloat(tlv(telemetry, 'led_power_W', '0'))        || 0;
 
   // ── KPI aggregates ────────────────────────────────────────────────────────
-  // Only primary device has live telemetry; others are "registered but pending"
-  const activeLights  = hasData ? 1 : 0;
+  const totalProjects = projects.length;
+  const totalGateways = gateways.length;
+  const totalLights   = lights.length;
+  const onlineLights  = lights.filter((light) => light.status === 'Online').length;
+  const offlineLights = lights.filter((light) => light.status !== 'Online').length;
+  const faultyLights  = faults.filter((fault) => fault.status !== 'Resolved').length;
+  const todaysEnergy  = '1.4 MWh';
+  const monthlySavings = '28.6%';
+
   const rawUptime     = tlv(telemetry, 'operating_time_hours', '–');
   const uptimeStr     = rawUptime === '–' ? '–' : `${rawUptime} hrs`;
   const rawPower      = tlv(telemetry, 'led_power_W', '–');
   const totalPowerStr = rawPower === '–' ? '– W' : `${rawPower} W`;
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
+
+  const enrichedDevices = devices.map((dev, index) => ({
+    ...dev,
+    status:     index === 0 ? primaryStatus : 'error',
+    brightness: index === 0 ? brightness : 0,
+    power:      index === 0 ? power : 0,
+  }));
 
   return (
     <>
@@ -61,23 +80,45 @@ export function Dashboard() {
       {/* ── KPI Row ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <KpiCard
-          title="Active Lights"
-          value={String(activeLights)}
-          sub={hasData ? 'Device online' : 'No signal yet'}
-          trendUp={hasData}
-          onClick={() => setIsLightsListOpen(true)}
+          title="Total Projects"
+          value={`${totalProjects}`}
+          onClick={() => setCurrentPage('projects')}
         />
         <KpiCard
-          title="System Uptime"
-          value={uptimeStr}
-          sub="Operating hours"
+          title="Total Gateways"
+          value={`${totalGateways}`}
+          sub="Active network nodes"
         />
         <KpiCard
-          title="Total Power Draw"
-          value={totalPowerStr}
-          sub={hasData ? 'LED output power' : 'Awaiting data'}
+          title="Total Lights"
+          value={`${totalLights}`}
+        />
+        <KpiCard
+          title="Online Lights"
+          value={`${onlineLights}`}
+          sub="Live status"
+        />
+        <KpiCard
+          title="Offline Lights"
+          value={`${offlineLights}`}
+        />
+        <KpiCard
+          title="Faulty Lights"
+          value={`${faultyLights}`}
+        />
+        <KpiCard
+          title="Today's Energy"
+          value={todaysEnergy}
+          sub="Estimated output"
+        />
+        <KpiCard
+          title="Monthly Savings"
+          value={monthlySavings}
+          sub="Compared to last month"
         />
       </div>
+      
+      
 
       {/* ── Telemetry + Alerts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
@@ -230,10 +271,21 @@ export function Dashboard() {
       <LightsList
         isOpen={isLightsListOpen}
         onClose={() => setIsLightsListOpen(false)}
-        onDeviceClick={handleDeviceClick}
-        primaryStatus={primaryStatus}
-        brightness={brightness}
-        power={power}
+        title="Active Lights Directory"
+        searchPlaceholder="Search light..."
+        itemCountLabel="Light"
+        items={enrichedDevices}
+        renderItem={(dev) => (
+          <DeviceCard
+            id={dev.id}
+            name={dev.name}
+            status={dev.status}
+            brightness={dev.brightness}
+            power={dev.power}
+          />
+        )}
+        onItemClick={handleDeviceClick}
+        emptyMessage="No lights match your search."
       />
 
       <LightsData
