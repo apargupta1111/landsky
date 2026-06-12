@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Wifi, WifiOff, AlertTriangle, Navigation } from 'lucide-react';
 import { useTelemetry, tlv } from '../hooks/useTelemetry';
 import { useAppStore } from '../store/useAppStore';
+import { LightsData } from './LightsData';
 
 interface CityMapProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface CityMapProps {
 export function CityMap({ isOpen, onClose }: CityMapProps) {
   const mapRef     = useRef<any>(null);
   const leafletRef = useRef<any>(null);
+  const [activeLight, setActiveLight] = useState<any>(null);
 
   const isDarkMode    = useAppStore((s) => s.isDarkMode);
   const storeDevices  = useAppStore((s) => s.devices);
@@ -209,12 +211,22 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
           </div>
         `;
 
-        L.marker([dev.lat, dev.lng], { icon: svgIcon })
+        const marker = L.marker([dev.lat, dev.lng], { icon: svgIcon })
           .addTo(map)
           .bindPopup(popupHtml, {
             maxWidth: 260,
             className: 'sl-popup',
           });
+
+        // Add click handler for light markers to open LightsData modal
+        if (dev.type === 'light') {
+          marker.on('click', () => {
+            const light = lights.find((l) => l.id === dev.id);
+            if (light) {
+              setActiveLight(light);
+            }
+          });
+        }
       });
 
       // Fit map to all markers if multiple devices
@@ -250,15 +262,16 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
   }, []);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[70] flex items-center justify-center p-4 md:p-8"
-        >
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[70] flex items-center justify-center p-4 md:p-8"
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -400,5 +413,8 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
         </motion.div>
       )}
     </AnimatePresence>
+
+    <LightsData light={activeLight} isOpen={!!activeLight} onClose={() => setActiveLight(null)} />
+  </>
   );
 }

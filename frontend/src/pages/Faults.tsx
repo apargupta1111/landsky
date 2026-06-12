@@ -4,7 +4,6 @@ import { Search, Filter, X, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export function Faults() {
-  const projects = useAppStore((s) => s.projects);
   const gateways = useAppStore((s) => s.gateways);
   const faults = useAppStore((s) => s.faults);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);

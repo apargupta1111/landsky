@@ -4,21 +4,24 @@ import { useAppStore } from '../store/useAppStore';
 
 export function ProjectDetails() {
   const selectedProjectId = useAppStore((s) => s.selectedProjectId);
-  const project = useAppStore((s) => s.projects.find((item) => item.id === selectedProjectId));
-  const gateways = useAppStore((s) => s.gateways.filter((gateway) => gateway.projectId === selectedProjectId));
+  const projects = useAppStore((s) => s.projects);
+  const gateways = useAppStore((s) => s.gateways);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const setSelectedProjectId = useAppStore((s) => s.setSelectedProjectId);
   const setSelectedGatewayId = useAppStore((s) => s.setSelectedGatewayId);
 
+  const project = projects.find((item) => item.id === selectedProjectId);
+  const projectGateways = gateways.filter((gateway) => gateway.projectId === selectedProjectId);
+
   const [query, setQuery] = useState('');
 
   const filteredGateways = useMemo(
-    () => gateways.filter((gateway) =>
+    () => projectGateways.filter((gateway) =>
       gateway.id.toLowerCase().includes(query.toLowerCase()) ||
       String(gateway.signal).includes(query.toLowerCase()) ||
       gateway.status.toLowerCase().includes(query.toLowerCase())
     ),
-    [gateways, query],
+    [projectGateways, query],
   );
 
   if (!project) {

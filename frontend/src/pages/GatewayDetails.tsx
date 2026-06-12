@@ -1,27 +1,30 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, Search } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { DeviceCard } from '../components/DeviceCard';
 import { LightsData } from '../components/LightsData';
 
 export function GatewayDetails() {
   const selectedGatewayId = useAppStore((s) => s.selectedGatewayId);
-  const gateway = useAppStore((s) => s.gateways.find((item) => item.id === selectedGatewayId));
-  const project = useAppStore((s) => s.projects.find((project) => project.id === gateway?.projectId));
-  const lights = useAppStore((s) => s.lights.filter((light) => light.gatewayId === selectedGatewayId));
+  const gateways = useAppStore((s) => s.gateways);
+  const projects = useAppStore((s) => s.projects);
+  const lights = useAppStore((s) => s.lights);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const setSelectedGatewayId = useAppStore((s) => s.setSelectedGatewayId);
+
+  const gateway = gateways.find((item) => item.id === selectedGatewayId);
+  const project = projects.find((p) => p.id === gateway?.projectId);
+  const gatewayLights = lights.filter((light) => light.gatewayId === selectedGatewayId);
 
   const [query, setQuery] = useState('');
   const [activeLight, setActiveLight] = useState<any>(null);
 
   const filteredLights = useMemo(
-    () => lights.filter((light) =>
+    () => gatewayLights.filter((light) =>
       light.id.toLowerCase().includes(query.toLowerCase()) ||
       light.name.toLowerCase().includes(query.toLowerCase()) ||
       light.status.toLowerCase().includes(query.toLowerCase())
     ),
-    [lights, query],
+    [gatewayLights, query],
   );
 
   if (!gateway) {

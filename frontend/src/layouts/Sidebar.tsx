@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Map as MapIcon, Folder, Activity, Settings, Menu, X, Users, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Folder, Activity, Settings, Menu, X, Users, AlertCircle, ChevronDown } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { CityMap } from '../components/CityMap';
 
@@ -19,6 +19,72 @@ function NavItem({ icon, label, active = false, sidebarOpen, onClick }: any) {
       {sidebarOpen && (
         <span className="ml-4 font-medium whitespace-nowrap">{label}</span>
       )}
+    </div>
+  );
+}
+
+function ProjectsDropdown({ sidebarOpen }: { sidebarOpen: boolean }) {
+  const projects = useAppStore((s) => s.projects);
+  const currentPage = useAppStore((s) => s.currentPage);
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
+  const setSelectedProjectId = useAppStore((s) => s.setSelectedProjectId);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleProjectClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setCurrentPage('projectDetails');
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-all
+          ${currentPage === 'projectDetails' || isOpen
+            ? 'bg-primary/20 border border-primary/50 text-primary shadow-[inset_4px_0_0_var(--accent-primary)]'
+            : 'text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--text-primary)]'
+          }`}
+      >
+        <div className="flex items-center shrink-0">
+          <Folder className="w-5 h-5" />
+          {sidebarOpen && (
+            <span className="ml-4 font-medium whitespace-nowrap">Projects</span>
+          )}
+        </div>
+        {sidebarOpen && (
+          <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {isOpen && sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-1 overflow-hidden"
+          >
+            {projects.length === 0 ? (
+              <div className="px-4 py-2 text-xs text-[var(--text-secondary)]">No projects</div>
+            ) : (
+              projects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => handleProjectClick(project.id)}
+                  className="w-full px-6 py-2 text-left text-sm rounded-lg text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-primary transition-colors whitespace-nowrap overflow-hidden text-ellipsis"
+                  title={project.name}
+                >
+                  {project.name}
+                </button>
+              ))
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -75,7 +141,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-1 mt-2 overflow-hidden">
         <NavItem icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard"   active={currentPage === 'dashboard'}  sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('dashboard')} />
-        <NavItem icon={<Folder         className="w-5 h-5" />} label="Projects"    active={currentPage === 'projects'}   sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('projects')} />
+        <ProjectsDropdown sidebarOpen={sidebarOpen} />
         <NavItem icon={<MapIcon        className="w-5 h-5" />} label="Live Map"    active={false}                       sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
         <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   active={currentPage === 'analytics'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('analytics')} />
         <NavItem icon={<AlertCircle    className="w-5 h-5" />} label="Faults"      active={currentPage === 'faults'}    sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('faults')} />

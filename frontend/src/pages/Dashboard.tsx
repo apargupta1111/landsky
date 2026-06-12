@@ -47,10 +47,6 @@ export function Dashboard() {
   const todaysEnergy  = '1.4 MWh';
   const monthlySavings = '28.6%';
 
-  const rawUptime     = tlv(telemetry, 'operating_time_hours', '–');
-  const uptimeStr     = rawUptime === '–' ? '–' : `${rawUptime} hrs`;
-  const rawPower      = tlv(telemetry, 'led_power_W', '–');
-  const totalPowerStr = rawPower === '–' ? '– W' : `${rawPower} W`;
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
 
@@ -88,10 +84,12 @@ export function Dashboard() {
           title="Total Gateways"
           value={`${totalGateways}`}
           sub="Active network nodes"
+          onClick={() => setCurrentPage('gateways')}
         />
         <KpiCard
           title="Total Lights"
           value={`${totalLights}`}
+          onClick={() => setCurrentPage('analytics') }
         />
         <KpiCard
           title="Online Lights"
@@ -120,88 +118,7 @@ export function Dashboard() {
       
       
 
-      {/* ── Telemetry + Alerts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Telemetry panel */}
-        <div className="lg:col-span-2 glass-panel rounded-xl p-4 md:p-6 border flex flex-col glowing-border min-h-[280px] md:h-[400px]">
-          <div className="flex justify-between items-center mb-4 md:mb-6">
-            <h3 className="font-bold text-base md:text-lg">Live Telemetry</h3>
-            <span className="flex items-center text-xs">
-              <span className="w-2 h-2 rounded-full bg-primary mr-2 shadow-[0_0_8px_var(--accent-primary)] animate-pulse" />
-              Live Stream
-            </span>
-          </div>
-
-          {hasData ? (
-            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto scrollbar-hide">
-              {[
-                { label: 'Brightness',      value: tlv(telemetry, 'brightness_percent'), unit: '%'   },
-                { label: 'LED Power',       value: tlv(telemetry, 'led_power_W'),        unit: 'W'   },
-                { label: 'Output Current',  value: tlv(telemetry, 'output_current_mA'),  unit: 'mA'  },
-                { label: 'Output Voltage',  value: tlv(telemetry, 'output_voltage_V'),   unit: 'Vdc' },
-                { label: 'Input Power',     value: tlv(telemetry, 'input_power_W'),      unit: 'W'   },
-                { label: 'Input Voltage',   value: tlv(telemetry, 'input_voltage_V'),    unit: 'Vac' },
-                { label: 'Input Current',   value: tlv(telemetry, 'input_current_mA'),   unit: 'mA'  },
-                { label: 'Frequency',       value: tlv(telemetry, 'input_frequency_Hz'), unit: 'Hz'  },
-                { label: 'Internal Temp',   value: tlv(telemetry, 'internal_temp_C'),    unit: '°C'  },
-                { label: 'Power Factor',    value: tlv(telemetry, 'power_factor'),        unit: ''    },
-                { label: 'Lamp-On Time',    value: tlv(telemetry, 'lamp_on_time_hours'),  unit: 'hrs' },
-                { label: 'Operating Time',  value: tlv(telemetry, 'operating_time_hours'),unit: 'hrs' },
-              ].map(({ label, value, unit }) => (
-                <div key={label} className="p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--panel-border)]">
-                  <div className="text-xs text-[var(--text-secondary)] mb-1">{label}</div>
-                  <div className="font-bold data-font text-lg leading-tight">
-                    {value} <span className="text-xs font-normal text-[var(--text-secondary)]">{unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex-1 border border-dashed border-[var(--panel-border)] rounded-lg flex flex-col items-center justify-center text-[var(--text-secondary)] text-sm text-center px-4 gap-3">
-              {isLoading
-                ? <><RefreshCw className="w-5 h-5 animate-spin text-primary" /><span>Fetching live data…</span></>
-                : <><span className="text-2xl">📡</span><span>No uplink received yet. Waiting for device…</span></>
-              }
-            </div>
-          )}
-        </div>
-
-        {/* Alerts */}
-        <div className="glass-panel rounded-xl p-4 md:p-6 border flex flex-col glowing-border min-h-[200px] md:h-[400px]">
-          <h3 className="font-bold text-base md:text-lg mb-4 md:mb-6">System Status</h3>
-          <div className="flex-1 space-y-3 md:space-y-4 overflow-y-auto pr-1 scrollbar-hide">
-            {hasData ? (
-              <>
-                <AlertItem
-                  id={primaryDevice?.id ?? 'device'}
-                  issue={primaryStatus === 'online' ? 'Device Online' : 'Fault Detected'}
-                  time={lastUpdated ? lastUpdated.toLocaleTimeString() : 'now'}
-                  type={primaryStatus === 'online' ? 'info' : 'error'}
-                />
-                {parseFloat(tlv(telemetry, 'internal_temp_C', '0')) > 60 && (
-                  <AlertItem id={primaryDevice?.id ?? 'device'} issue="High Temperature" time="now" type="warning" />
-                )}
-                {parseFloat(tlv(telemetry, 'rssi', '0')) < -110 && (
-                  <AlertItem id={primaryDevice?.id ?? 'device'} issue="Weak LoRa Signal" time="now" type="warning" />
-                )}
-                {devices.length > 1 && (
-                  <AlertItem
-                    id={`+${devices.length - 1} device${devices.length > 2 ? 's' : ''}`}
-                    issue="Registered — awaiting uplink"
-                    time="pending"
-                    type="warning"
-                  />
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-[var(--text-secondary)] text-sm text-center gap-2">
-                <span className="text-2xl">🔌</span>
-                <span>No alerts — awaiting device signal</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+  
 
       {/* ── Device Control ── */}
       <div className="mt-6 md:mt-8">

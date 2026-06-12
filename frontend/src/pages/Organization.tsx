@@ -22,9 +22,7 @@ export function Organization() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Organization</h1>
-          <p className="mt-2 text-[var(--text-secondary)]">
-            Tenant hierarchy view for LandSky. Track project coverage, gateway health, and light operations across the platform.
-          </p>
+         
         </div>
       </div>
 

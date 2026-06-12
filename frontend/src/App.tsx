@@ -2,6 +2,7 @@ import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Projects } from './pages/Projects';
 import { ProjectDetails } from './pages/ProjectDetails';
+import { Gateways } from './pages/Gateways';
 import { GatewayDetails } from './pages/GatewayDetails';
 import { Analytics } from './pages/Analytics';
 import { Faults } from './pages/Faults';
@@ -23,6 +24,7 @@ function App() {
       {currentPage === 'dashboard' && <Dashboard />}
       {currentPage === 'projects' && <Projects />}
       {currentPage === 'projectDetails' && <ProjectDetails />}
+      {currentPage === 'gateways' && <Gateways />}
       {currentPage === 'gatewayDetails' && <GatewayDetails />}
       {currentPage === 'analytics' && <Analytics />}
       {currentPage === 'faults' && <Faults />}

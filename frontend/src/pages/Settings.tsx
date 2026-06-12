@@ -123,20 +123,7 @@ export function Settings() {
         </div>
       </SectionCard>
 
-      {/* ── Connection ─────────────────────────────────────────────────────── */}
-      <SectionCard title="Connection" icon={<Server className="w-5 h-5" />}>
-        <div className="space-y-1 mb-4">
-          <InfoRow label="Node-RED Base URL" value={ENDPOINTS.nodered.base} />
-          <InfoRow label="Grafana"           value={ENDPOINTS.grafana} />
-          <InfoRow label="InfluxDB"          value={ENDPOINTS.influx} />
-          <InfoRow label="Poll Interval"     value="5 seconds" />
-          <InfoRow label="Protocol"          value="LoRaWAN / TTS" />
-        </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] bg-black/5 dark:bg-white/5 rounded-xl px-4 py-3 border border-[var(--panel-border)]">
-          <Globe className="w-4 h-4 text-primary shrink-0" />
-          Telemetry is fetched from Node-RED every 5 s. Downlinks are pushed via TTS REST API.
-        </div>
-      </SectionCard>
+     
 
       {/* ── Devices ────────────────────────────────────────────────────────── */}
       <SectionCard title="Registered Devices" icon={<Wifi className="w-5 h-5" />}>
