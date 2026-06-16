@@ -11,7 +11,7 @@ interface ControlsTabProps {
   };
 }
 
-export function ControlsTab({ ctrl }: ControlsTabProps) {
+export function ControlsTab({ctrl }: ControlsTabProps) {
   const [dimLevel,      setDimLevel]      = useState(100);
   const [pendingReset,  setPendingReset]  = useState(false);
 

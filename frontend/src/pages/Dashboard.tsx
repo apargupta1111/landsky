@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { KpiCard } from '../components/KpiCard';
 import { AlertItem } from '../components/AlertItem';
@@ -6,7 +6,7 @@ import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
 import { AddLightModal } from '../components/AddLightModal';
-import { useTelemetry, tlv } from '../hooks/useTelemetry';
+import { fetchNodeRedTelemetry, tlv } from '../services/nodeRedTelemetry';
 import { useAppStore } from '../store/useAppStore';
 
 export function Dashboard() {
@@ -21,41 +21,87 @@ export function Dashboard() {
   const lights         = useAppStore((s) => s.lights);
   const faults         = useAppStore((s) => s.faults);
 
-  // Primary device telemetry (first / seed device)
-  const primaryDevice = devices[0];
-  const { data: telemetry, isLoading, error: telemetryError, lastUpdated } =
-    useTelemetry(primaryDevice?.ttsDeviceId);
+  // ── Parallel Telemetry Loading Logic for All Devices ─────────────────────────
+  const [telemetries, setTelemetries] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [telemetryError, setTelemetryError] = useState<string | null>(null);
 
-  // ── Derive primary device status ──────────────────────────────────────────
-  const hasData      = !!telemetry && Object.keys(telemetry).length > 0;
-  const faultStatus  = (telemetry as any)?.fault_status?.[0]?.value;
-  const primaryStatus: 'online' | 'warning' | 'error' =
-    !hasData        ? 'error'
-    : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
-    : 'online';
+  useEffect(() => {
+    let active = true;
+    const loadAllTelemetry = async () => {
+      if (!devices.length) return;
+      setIsLoading(true);
+      try {
+        const results: Record<string, any> = {};
+        await Promise.all(
+          devices.map(async (dev) => {
+            try {
+              const data = await fetchNodeRedTelemetry(dev.ttsDeviceId);
+              results[dev.id] = data;
+            } catch (e) {
+              console.error(`Telemetry error for ${dev.id}:`, e);
+            }
+          })
+        );
+        if (active) {
+          setTelemetries(results);
+          setLastUpdated(new Date());
+          setTelemetryError(null);
+        }
+      } catch (err: any) {
+        if (active) {
+          setTelemetryError(err.message || 'Error loading telemetry');
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-  const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
-  const power      = parseFloat(tlv(telemetry, 'led_power_W', '0'))        || 0;
+    loadAllTelemetry();
+    const interval = setInterval(loadAllTelemetry, 5000); // 5s live polling
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [devices]);
+
+  const getDeviceTelemetryProps = (dev: any) => {
+    const telemetry = telemetries[dev.id];
+    const hasData = !!telemetry && Object.keys(telemetry).length > 0;
+    const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
+    const status: 'online' | 'warning' | 'error' =
+      !hasData ? 'error'
+      : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
+      : 'online';
+
+    const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
+    const power = parseFloat(tlv(telemetry, 'led_power_W', '0')) || 0;
+
+    return { status, brightness, power };
+  };
+
+  const enrichedDevices = devices.map((dev) => {
+    const props = getDeviceTelemetryProps(dev);
+    return {
+      ...dev,
+      ...props,
+    };
+  });
 
   // ── KPI aggregates ────────────────────────────────────────────────────────
   const totalProjects = projects.length;
   const totalGateways = gateways.length;
   const totalLights   = lights.length;
-  const onlineLights  = lights.filter((light) => light.status === 'Online').length;
-  const offlineLights = lights.filter((light) => light.status !== 'Online').length;
-  const faultyLights  = faults.filter((fault) => fault.status !== 'Resolved').length;
+  const onlineLights  = enrichedDevices.filter((d) => d.status === 'online').length;
+  const offlineLights = enrichedDevices.filter((d) => d.status === 'error').length;
+  const faultyLights  = enrichedDevices.filter((d) => d.status === 'warning').length;
   const todaysEnergy  = '1.4 MWh';
   const monthlySavings = '28.6%';
 
-
   const handleDeviceClick = (light: any) => setActiveLight(light);
-
-  const enrichedDevices = devices.map((dev, index) => ({
-    ...dev,
-    status:     index === 0 ? primaryStatus : 'error',
-    brightness: index === 0 ? brightness : 0,
-    power:      index === 0 ? power : 0,
-  }));
 
   return (
     <>
@@ -146,28 +192,16 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-          {/* Primary device with live telemetry */}
-          {primaryDevice && (
-            <DeviceCard
-              id={primaryDevice.id}
-              name={primaryDevice.name}
-              status={primaryStatus}
-              brightness={brightness}
-              power={power}
-              onClick={() => handleDeviceClick({ ...primaryDevice, status: primaryStatus })}
-            />
-          )}
-
-          {/* Additional registered devices (no live telemetry yet) */}
-          {devices.slice(1).map((dev) => (
+          {/* Render all registered devices with live telemetry */}
+          {enrichedDevices.map((dev) => (
             <DeviceCard
               key={dev.id}
               id={dev.id}
               name={dev.name}
-              status="error"
-              brightness={0}
-              power={0}
-              onClick={() => handleDeviceClick({ ...dev, status: 'error' })}
+              status={dev.status}
+              brightness={dev.brightness}
+              power={dev.power}
+              onClick={() => handleDeviceClick(dev)}
             />
           ))}
 

@@ -1,16 +1,4 @@
-/**
- * ttsDownlink.ts
- * Sends LoRaWAN downlink frames directly to The Things Stack REST API.
- * This bypasses the broken ThingsBoard RPC path in Node-RED.
- *
- * TTS Downlink endpoint:
- *   POST /api/v3/as/applications/{app_id}/devices/{device_id}/down/push
- *   Authorization: Bearer <downlink-key>
- *
- * MS51FB9AE driver command encoding (FPort 10):
- *   Byte 0: Command ID
- *   Byte 1+: Parameters (if any)
- */
+
 
 import { ENDPOINTS, TTS_API_KEY } from '../config/endpoints';
 
@@ -44,23 +32,21 @@ interface DownlinkResult {
   error?: string;
 }
 
-// ─── Send via Node-RED HTTP endpoint ─────────────────────────────────────────
-// Node-RED (port 1880) has no auth and internally routes to TTS MQTT.
-// Vite proxy: /nr-api → http://13.205.43.53:1880
 
-export async function sendControlCommand(method: string, value?: number): Promise<DownlinkResult> {
+export async function sendControlCommand(deviceId: string, method: string, value?: number): Promise<DownlinkResult> {
   try {
+    const topic = deviceId.replace('-', ''); // 
     const res = await fetch(`${ENDPOINTS.nodered.base}/smartlight/control`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method, value: value ?? 0 }),
+      body: JSON.stringify({ device_id: deviceId, topic, method, value: value ?? 0 }),
     });
     if (!res.ok) {
       const text = await res.text();
       console.error('[Control] Node-RED error:', res.status, text);
       return { ok: false, error: `HTTP ${res.status}: ${text}` };
     }
-    console.log(`[Control] Sent ${method}(${value}) via Node-RED`);
+    console.log(`[Control] Sent ${method}(${value}) for ${deviceId} (topic: ${topic}) via Node-RED`);
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -72,9 +58,9 @@ export async function sendControlCommand(method: string, value?: number): Promis
 // ─── High-Level Command API ───────────────────────────────────────────────────
 
 export const ttsCommands = {
-  setDimming: (level: number) => sendControlCommand('setDimming', level),
-  setMaxCurrent: (pct: number) => sendControlCommand('setMaxCurrent', pct),
-  powerOn: () => sendControlCommand('powerOn'),
-  powerOff: () => sendControlCommand('powerOff'),
-  resetDriver: () => sendControlCommand('resetDriver'),
+  setDimming: (deviceId: string, level: number) => sendControlCommand(deviceId, 'setDimming', level),
+  setMaxCurrent: (deviceId: string, pct: number) => sendControlCommand(deviceId, 'setMaxCurrent', pct),
+  powerOn: (deviceId: string) => sendControlCommand(deviceId, 'powerOn'),
+  powerOff: (deviceId: string) => sendControlCommand(deviceId, 'powerOff'),
+  resetDriver: (deviceId: string) => sendControlCommand(deviceId, 'resetDriver'),
 };

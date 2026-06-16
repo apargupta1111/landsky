@@ -1,69 +1,18 @@
-import { create } from "zustand";
+import type { Project, Fault } from './types';
 
-export interface Project {
-  id: string;
-  name: string;
-  gatewayCount: number;
-  lightCount: number;
-  onlineLights: number;
-  faults: number;
-  status: "Active" | "At Risk";
-}
+const PROJECTS: Project[] = [
+  { id: 'chandigarh', name: 'Smart City Chandigarh', gatewayCount: 24, lightCount: 520, onlineLights: 498, faults: 12, status: 'Active' }
+];
 
-interface ProjectState {
-  projects: Project[];
+const FAULTS: Fault[] = [
+  { id: 'F-1301', projectId: 'chandigarh', projectName: 'Smart City Chandigarh', gatewayId: 'GW001', poleId: 'Pole-003', type: 'Power Failure', timestamp: '2026-06-10 09:18', status: 'Open', priority: 'High', assignedTo: 'Team Alpha' },
+  { id: 'F-1302', projectId: 'chandigarh', projectName: 'Smart City Chandigarh', gatewayId: 'GW003', poleId: 'Pole-005', type: 'Low Brightness', timestamp: '2026-06-10 10:05', status: 'Assigned', priority: 'Medium', assignedTo: 'Team Bravo' },
+  { id: 'F-2301', projectId: 'mohali-phase-1', projectName: 'Mohali Phase 1', gatewayId: 'GW006', poleId: 'Pole-006', type: 'Communication Loss', timestamp: '2026-06-10 07:45', status: 'Open', priority: 'High', assignedTo: 'Team Delta' }
+];
 
-  setProjects: (projects: Project[]) => void;
-
-  addProject: (project: Project) => void;
-
-  removeProject: (id: string) => void;
-
-  fetchProjects: () => Promise<void>;
-}
-
-export const useProjectStore = create<ProjectState>((set, get) => ({
-  projects: [],
-
-  setProjects: (projects) =>
-    set({
-      projects,
-    }),
-
-  addProject: (project) => {
-    const exists = get().projects.find(
-      (p) => p.id === project.id
-    );
-
-    if (!exists) {
-      set((state) => ({
-        projects: [...state.projects, project],
-      }));
-    }
-  },
-
-  removeProject: (id) =>
-    set((state) => ({
-      projects: state.projects.filter(
-        (project) => project.id !== id
-      ),
-    })),
-
-  fetchProjects: async () => {
-    try {
-      const response = await fetch("/api/projects");
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch projects");
-      }
-
-      const data = await response.json();
-
-      set({
-        projects: data,
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  },
-}));
+export const createProjectSlice = (set: any) => ({
+  projects: PROJECTS as Project[],
+  faults: FAULTS as Fault[],
+  selectedProjectId: null as string | null,
+  setSelectedProjectId: (id: string | null) => set({ selectedProjectId: id }),
+});

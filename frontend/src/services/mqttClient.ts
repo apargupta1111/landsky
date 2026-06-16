@@ -4,7 +4,7 @@ import { MQTT_CONFIG, MQTT_ENABLED } from '../config/endpoints';
 
 type MqttClient = ReturnType<typeof mqtt.connect>;
 
-// ─── Singleton MQTT Client ───────────────────────────────────────────────────
+
 
 let client: MqttClient | null = null;
 const subscribers: Map<string, Set<(payload: unknown) => void>> = new Map();

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Wifi, WifiOff, AlertTriangle, Navigation } from 'lucide-react';
-import { useTelemetry, tlv } from '../hooks/useTelemetry';
+import { fetchNodeRedTelemetry, tlv } from '../services/nodeRedTelemetry';
 import { useAppStore } from '../store/useAppStore';
 import { LightsData } from './LightsData';
 
@@ -20,19 +20,59 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
   const gateways      = useAppStore((s) => s.gateways);
   const lights        = useAppStore((s) => s.lights);
 
-  // Live telemetry for primary device
-  const primaryDevice = storeDevices[0];
-  const { data: telemetry, lastUpdated } = useTelemetry(primaryDevice?.ttsDeviceId);
+  // ── Parallel Telemetry Loading Logic for All Devices ─────────────────────────
+  const [telemetries, setTelemetries] = useState<Record<string, any>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const hasData      = !!telemetry && Object.keys(telemetry).length > 0;
-  const faultStatus  = (telemetry as any)?.fault_status?.[0]?.value;
-  const deviceStatus: 'online' | 'warning' | 'error' =
-    !hasData         ? 'error'
-    : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
-    : 'online';
+  useEffect(() => {
+    let active = true;
+    const loadAllTelemetry = async () => {
+      if (!storeDevices.length) return;
+      try {
+        const results: Record<string, any> = {};
+        await Promise.all(
+          storeDevices.map(async (dev) => {
+            try {
+              const data = await fetchNodeRedTelemetry(dev.ttsDeviceId);
+              results[dev.id] = data;
+            } catch (e) {
+              console.error(`Telemetry error for ${dev.id}:`, e);
+            }
+          })
+        );
+        if (active) {
+          setTelemetries(results);
+          setLastUpdated(new Date());
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
-  const power      = parseFloat(tlv(telemetry, 'led_power_W',        '0')) || 0;
+    if (isOpen) {
+      loadAllTelemetry();
+      const interval = setInterval(loadAllTelemetry, 5000); // 5s live polling
+      return () => {
+        active = false;
+        clearInterval(interval);
+      };
+    }
+  }, [isOpen, storeDevices]);
+
+  const getDeviceTelemetryProps = (dev: any) => {
+    const telemetry = telemetries[dev.id];
+    const hasData = !!telemetry && Object.keys(telemetry).length > 0;
+    const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
+    const status: 'online' | 'warning' | 'error' =
+      !hasData ? 'error'
+      : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
+      : 'online';
+
+    const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
+    const power = parseFloat(tlv(telemetry, 'led_power_W', '0')) || 0;
+
+    return { status, brightness, power };
+  };
 
   const gatewayMarkers = gateways.map((gateway) => ({
     id: gateway.id,
@@ -61,17 +101,20 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
   }));
 
   const devices = [
-    ...storeDevices.map((dev, i) => ({
-      id: dev.id,
-      lat: dev.lat,
-      lng: dev.lng,
-      label: dev.address,
-      name: dev.name,
-      type: 'device' as const,
-      status: i === 0 ? deviceStatus : ('error' as const),
-      brightness: i === 0 ? brightness : 0,
-      power: i === 0 ? power : 0,
-    })),
+    ...storeDevices.map((dev) => {
+      const props = getDeviceTelemetryProps(dev);
+      return {
+        id: dev.id,
+        lat: dev.lat,
+        lng: dev.lng,
+        label: dev.address,
+        name: dev.name,
+        type: 'device' as const,
+        status: props.status,
+        brightness: props.brightness,
+        power: props.power,
+      };
+    }),
     ...gatewayMarkers,
     ...lightMarkers,
   ];
@@ -249,7 +292,7 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
     leafletRef.current.eachLayer((layer: any) => {
       if (layer.setStyle) layer.setStyle({});
     });
-  }, [deviceStatus, isOpen]);
+  }, [telemetries, isOpen]);
 
   // Cleanup on unmount
   useEffect(() => {

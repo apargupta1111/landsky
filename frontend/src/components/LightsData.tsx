@@ -17,8 +17,8 @@ interface Props {
 
 export function LightsData({ light, isOpen, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'controls' | 'schedule'>('controls');
-  const { data: telemetry, isLoading, error: telErr, lastUpdated, refresh } = useTelemetry();
-  const ctrl  = useLightControl();
+  const { data: telemetry, isLoading, error: telErr, lastUpdated, refresh } = useTelemetry(light?.ttsDeviceId);
+  const ctrl  = useLightControl(light?.ttsDeviceId);
   const sched = useSchedule(light?.id ?? '');
 
   if (!light) return null;

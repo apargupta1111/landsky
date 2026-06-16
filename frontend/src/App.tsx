@@ -17,7 +17,7 @@ function App() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const currentPage     = useAppStore((s) => s.currentPage);
 
-  if (!isAuthenticated) return <Login />;
+  if (!isAuthenticated) return <Login />
 
   return (
     <MainLayout>
