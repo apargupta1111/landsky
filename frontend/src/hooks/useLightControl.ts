@@ -18,7 +18,7 @@ interface UseLightControlReturn {
   powerOff: () => Promise<void>;
 }
 
-export function useLightControl(): UseLightControlReturn {
+export function useLightControl(deviceId?: string | null): UseLightControlReturn {
   const [status, setStatus] = useState<CommandStatus>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mqttStatus, setMqttStatus] = useState<MqttConnectionStatus>('disconnected');
@@ -47,15 +47,17 @@ export function useLightControl(): UseLightControlReturn {
     []
   );
 
+  const targetId = deviceId || 'streetlight-01';
+
   return {
     status,
     mqttStatus,
     errorMsg,
-    setDimmingLevel: (level)   => send(() => ttsCommands.setDimming(level)),
-    setMaxCurrent:   (percent) => send(() => ttsCommands.setMaxCurrent(percent)),
-    setDimmingMode:  (_mode)   => send(() => ttsCommands.setDimming(150)), // mode switch → reset to 75%
-    resetDriver:     ()        => send(() => ttsCommands.resetDriver()),
-    powerOn:         ()        => send(() => ttsCommands.powerOn()),
-    powerOff:        ()        => send(() => ttsCommands.powerOff()),
+    setDimmingLevel: (level)   => send(() => ttsCommands.setDimming(targetId, level)),
+    setMaxCurrent:   (percent) => send(() => ttsCommands.setMaxCurrent(targetId, percent)),
+    setDimmingMode:  (_mode)   => send(() => ttsCommands.setDimming(targetId, 150)), // mode switch → reset to 75%
+    resetDriver:     ()        => send(() => ttsCommands.resetDriver(targetId)),
+    powerOn:         ()        => send(() => ttsCommands.powerOn(targetId)),
+    powerOff:        ()        => send(() => ttsCommands.powerOff(targetId)),
   };
 }

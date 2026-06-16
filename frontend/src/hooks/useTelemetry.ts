@@ -10,7 +10,7 @@ interface UseTelemetryReturn {
   refresh: () => void;
 }
 
-const POLL_INTERVAL_MS = 5000; // 5-second live polling
+const POLL_INTERVAL_MS = 10000000; // 5-second live polling
 
 export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
   const [data, setData] = useState<TelemetryData | null>(null);
@@ -31,7 +31,7 @@ export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [deviceId]);
+  }, []);
 
   useEffect(() => {
     load();

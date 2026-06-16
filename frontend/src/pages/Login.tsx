@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
+
+
 export function Login() {
   const login = useAppStore((s) => s.login);
+  useEffect(() => {
+  if (import.meta.env.VITE_BYPASS_AUTH)
+   {
+    login('a', 'a');
+  }
+}, [login]);
+  
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +27,7 @@ export function Login() {
     setError('');
     setLoading(true);
 
-    // Simulate a tiny network delay for UX
+  
     await new Promise((r) => setTimeout(r, 600));
 
     const ok = login(username.trim(), password);
@@ -30,6 +39,7 @@ export function Login() {
       setTimeout(() => setShake(false), 600);
     }
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[var(--bg-color)]">
@@ -151,9 +161,7 @@ export function Login() {
           </form>
 
           {/* Footer hint */}
-          <p className="text-center text-xs text-[var(--text-secondary)] mt-6">
-            Secured · LoRaWAN Smart Lighting Control
-          </p>
+         
         </div>
       </motion.div>
     </div>

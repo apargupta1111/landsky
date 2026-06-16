@@ -52,10 +52,13 @@ interface NodeRedPayload {
  * Returns an empty object if no uplink has been received yet (HTTP 204).
  */
 export async function fetchNodeRedTelemetry(deviceId?: string): Promise<TelemetryData> {
-  // Build candidate URLs
-  const urls: string[] = deviceId
+  // Normalize device ID: "streetlight-01" → "streetlight01" to match Node-RED topics
+  const topicId = deviceId ? deviceId.replace(/-/g, '') : undefined;
+
+  // Build candidate URLs — try per-device first, fall back to generic
+  const urls: string[] = topicId
     ? [
-        `${ENDPOINTS.nodered.base}/smartlight/${encodeURIComponent(deviceId)}/data`,
+        `${ENDPOINTS.nodered.base}/smartlight/${encodeURIComponent(topicId)}/data`,
         `${ENDPOINTS.nodered.base}/smartlight/data`,
       ]
     : [`${ENDPOINTS.nodered.base}/smartlight/data`];
@@ -64,11 +67,11 @@ export async function fetchNodeRedTelemetry(deviceId?: string): Promise<Telemetr
   for (const url of urls) {
     try {
       const r = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
-      if (r.status === 404) continue; // try next URL
+      if (r.status === 404) continue; // per-device endpoint not configured yet — try generic
       res = r;
       break;
     } catch {
-      // network error on this URL — try next
+      // network error — try next URL
     }
   }
 
@@ -76,18 +79,19 @@ export async function fetchNodeRedTelemetry(deviceId?: string): Promise<Telemetr
 
   // 204 = Node-RED has not received any TTS uplink yet
   if (res.status === 204) {
-    console.warn('[NodeRed] No uplink cached yet (204)');
     return {};
   }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.error(`[NodeRed] HTTP ${res.status}:`, text);
-    throw new Error(`Node-RED returned HTTP ${res.status}`);
+    throw new Error(`Node-RED returned HTTP ${res.status}: ${text}`);
   }
 
   const raw = await res.text();
-  console.log('[NodeRed] Raw response:', raw.slice(0, 300));
+  if (deviceId === 'streetlight-01') {
+    // Only log once (for primary device) to avoid console spam
+    console.log('[NodeRed] Raw response:', raw.slice(0, 200));
+  }
 
   let d: NodeRedPayload;
   try {

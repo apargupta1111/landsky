@@ -1,41 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Trash2 } from 'lucide-react';
-import { DeviceCard } from './DeviceCard';
-import { useAppStore } from '../store/useAppStore';
 
 interface LightsListProps {
   isOpen: boolean;
   onClose: () => void;
-  onDeviceClick: (light: any) => void;
-  primaryStatus: 'online' | 'warning' | 'error';
-  brightness: number;
-  power: number;
+  title?: string;
+  searchPlaceholder?: string;
+  items: any[];
+  itemCountLabel?: string;
+  renderItem: (item: any) => any;
+  onItemClick?: (item: any) => void;
+  onItemDelete?: (item: any) => void;
+  emptyMessage?: string;
 }
 
 export function LightsList({
-  isOpen, onClose, onDeviceClick,
-  primaryStatus, brightness, power,
+  isOpen,
+  onClose,
+  title = 'Active Lights Directory',
+  searchPlaceholder = 'Search by ID, name or address…',
+  items,
+  itemCountLabel = 'Node',
+  renderItem,
+  onItemClick,
+  onItemDelete,
+  emptyMessage,
 }: LightsListProps) {
   const [query, setQuery] = useState('');
-  const devices      = useAppStore((s) => s.devices);
-  const removeDevice = useAppStore((s) => s.removeDevice);
 
-  // Seed device (index 0) always gets live telemetry values;
-  // others show as offline until they start sending uplinks.
-  const enriched = devices.map((dev, i) => ({
-    ...dev,
-    status:     i === 0 ? primaryStatus : ('error' as const),
-    brightness: i === 0 ? brightness    : 0,
-    power:      i === 0 ? power         : 0,
-  }));
-
-  const filtered = enriched.filter(
-    (d) =>
-      d.id.toLowerCase().includes(query.toLowerCase()) ||
-      d.name.toLowerCase().includes(query.toLowerCase()) ||
-      d.address.toLowerCase().includes(query.toLowerCase()),
-  );
+  const filtered = items.filter((item) => {
+    const candidate = query.toLowerCase();
+    return Object.values(item).some((value) =>
+      typeof value === 'string'
+        ? value.toLowerCase().includes(candidate)
+        : typeof value === 'number'
+          ? String(value).includes(candidate)
+          : false,
+    );
+  });
 
   return (
     <AnimatePresence>
@@ -57,9 +60,9 @@ export function LightsList({
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b border-[var(--panel-border)] bg-[var(--bg-color)]/30 backdrop-blur-md gap-3">
               <div className="flex items-center space-x-3 min-w-0">
-                <h2 className="text-lg md:text-2xl font-bold truncate">Active Lights Directory</h2>
+                <h2 className="text-lg md:text-2xl font-bold truncate">{title}</h2>
                 <span className="px-2 py-0.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 shrink-0">
-                  {filtered.length} Node{filtered.length !== 1 ? 's' : ''}
+                  {filtered.length} {itemCountLabel}{filtered.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -85,32 +88,29 @@ export function LightsList({
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-[var(--text-secondary)] text-sm text-center gap-3">
                   <span className="text-3xl">🔍</span>
-                  <span>No devices match "{query}"</span>
+                  <span>{emptyMessage ?? `No items match "${query}"`}</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                  {filtered.map((dev, index) => (
+                  {filtered.map((item, index) => (
                     <motion.div
-                      key={dev.id}
+                      key={item.id ?? index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                       className="relative group"
                     >
-                      <DeviceCard
-                        id={dev.id}
-                        name={dev.name}
-                        status={dev.status}
-                        brightness={dev.brightness}
-                        power={dev.power}
-                        onClick={() => onDeviceClick(dev)}
-                      />
-                      {/* Delete button — only for non-seed devices */}
-                      {index !== 0 && (
+                      <div onClick={() => onItemClick?.(item)}>
+                        {renderItem(item)}
+                      </div>
+                      {onItemDelete && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); removeDevice(dev.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onItemDelete(item);
+                          }}
                           className="absolute top-2 right-2 p-1.5 rounded-lg bg-error/10 border border-error/30 text-error opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error/20"
-                          title="Remove device"
+                          title="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

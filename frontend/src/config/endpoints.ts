@@ -25,9 +25,8 @@ export const ENDPOINTS = {
     console:  `http://${SERVER_IP}/console`,
     downlink: `http://${SERVER_IP}/api/v3/as/applications/${encodeURIComponent('hbeon-app-001')}/devices/${encodeURIComponent('streetlight-01')}/down/push`,
   },
-  nodered: { base: `http://${SERVER_IP}:1880` },
-  grafana:  `http://${SERVER_IP}:3000`,
-  influx:   `http://${SERVER_IP}:8086`,
+  nodered: { base: '/nr-api' },
+
 };
 
 // ─── Device Config ────────────────────────────────────────────────────────────
@@ -36,8 +35,6 @@ export const DEVICE_CONFIG = {
   endDeviceId: 'streetlight-01',
 };
 
-// ─── Known Device Locations ───────────────────────────────────────────────────
-// Update lat/lng if the physical device moves.
 export const DEVICE_LOCATIONS: Record<string, { lat: number; lng: number; label: string }> = {
   'streetlight-01': {
     lat:   28.4859,
