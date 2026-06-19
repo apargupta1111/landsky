@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CalendarClock, Clock, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
+import { CalendarClock, Clock, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { useSchedule } from '../../hooks/useSchedule';
 import { DAY_LABELS } from './types';
 

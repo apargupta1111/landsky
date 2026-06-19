@@ -1,6 +1,6 @@
 
 
-import { ENDPOINTS, TTS_API_KEY } from '../config/endpoints';
+import { ENDPOINTS } from '../config/endpoints';
 
 // ─── Hex Encoders for MS51 Driver Commands ────────────────────────────────────
 

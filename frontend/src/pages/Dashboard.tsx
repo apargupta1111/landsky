@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { KpiCard } from '../components/KpiCard';
-import { AlertItem } from '../components/AlertItem';
+
 import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
@@ -19,7 +19,7 @@ export function Dashboard() {
   const projects       = useAppStore((s) => s.projects);
   const gateways       = useAppStore((s) => s.gateways);
   const lights         = useAppStore((s) => s.lights);
-  const faults         = useAppStore((s) => s.faults);
+
 
   // ── Parallel Telemetry Loading Logic for All Devices ─────────────────────────
   const [telemetries, setTelemetries] = useState<Record<string, any>>({});

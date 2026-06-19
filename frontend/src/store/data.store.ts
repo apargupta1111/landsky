@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from './useAppStore';
-import type { Project, Fault, Gateway, ApiGatewayItem } from './types';
+import type { Project, Fault, Gateway, ApiGatewayItem, TelemetrySnapshot } from './types';
 type DataState = any;
 
 const PROJECTS: Project[] = [
@@ -21,9 +21,9 @@ export const createDataSlice: StateCreator<AppState, [], [], DataState> = (set) 
   selectedProjectId: null,
   selectedGatewayId: null,
   selectedLightId: null,
-  setSelectedProjectId: (id) => set({ selectedProjectId: id }),
-  setSelectedGatewayId: (id) => set({ selectedGatewayId: id }),
-  setSelectedLightId: (id) => set({ selectedLightId: id }),
+  setSelectedProjectId: (id: string | null) => set({ selectedProjectId: id }),
+  setSelectedGatewayId: (id: string | null) => set({ selectedGatewayId: id }),
+  setSelectedLightId: (id: string | null) => set({ selectedLightId: id }),
 
   isLoadingGateways: false,
   gatewayFetchError: null,
@@ -63,7 +63,7 @@ export const createDataSlice: StateCreator<AppState, [], [], DataState> = (set) 
         faults: Number(item.faults ?? 0),
         signal: Number(item.signal ?? 0),
         status: item.connectionStatus ? 'Online' : 'Offline',
-        lat/lng: Number(item.location?.y ?? 0),
+        lat: Number(item.location?.y ?? 0),
         lng: Number(item.location?.x ?? 0),
       }));
 
@@ -77,7 +77,7 @@ export const createDataSlice: StateCreator<AppState, [], [], DataState> = (set) 
   },
 
   telemetryHistory: [],
-  pushTelemetrySnapshot: (snap) =>
+  pushTelemetrySnapshot: (snap: TelemetrySnapshot) =>
     set((s) => ({
       telemetryHistory: [...s.telemetryHistory.slice(-29), snap],
     })),

@@ -7,7 +7,7 @@ import { createGatewaySlice } from './gatewayStore';
 import { createProjectSlice } from './projectStore';
 import { createAssetSlice } from './assetStore';
 
-import type { Device, Project, Gateway, LightAsset, Fault, TelemetrySnapshot, ApiGatewayItem, Page } from './types';
+import type { Device, Project, Gateway, LightAsset, Fault, TelemetrySnapshot, Page } from './types';
 
 // ── Root Store Interface ───────────────────────────────────────────────────
 export interface AppState {

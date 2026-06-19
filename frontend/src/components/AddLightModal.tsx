@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, MapPin, Wifi, Tag, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import type { Device } from '../store/useAppStore';
+import type { Device } from '../store/types';
 
 interface AddLightModalProps {
   isOpen: boolean;
