@@ -1,14 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
-import { onMqttStatus, getMqttClient } from '../services/mqttClient';
-import type { MqttConnectionStatus } from '../services/mqttClient';
+import { useState, useCallback } from 'react';
 import { ttsCommands } from '../services/ttsDownlink';
-import { MQTT_ENABLED } from '../config/endpoints';
 
 type CommandStatus = 'idle' | 'sending' | 'success' | 'error';
 
 interface UseLightControlReturn {
   status: CommandStatus;
-  mqttStatus: MqttConnectionStatus;
   errorMsg: string | null;
   setDimmingLevel: (level: number) => Promise<void>;
   setMaxCurrent: (percent: number) => Promise<void>;
@@ -21,13 +17,6 @@ interface UseLightControlReturn {
 export function useLightControl(deviceId?: string | null): UseLightControlReturn {
   const [status, setStatus] = useState<CommandStatus>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [mqttStatus, setMqttStatus] = useState<MqttConnectionStatus>('disconnected');
-
-  useEffect(() => {
-    if (MQTT_ENABLED) getMqttClient();
-    const unsub = onMqttStatus(setMqttStatus);
-    return unsub;
-  }, []);
 
   // Wraps a TTS downlink call with UI status feedback
   const send = useCallback(
@@ -51,7 +40,6 @@ export function useLightControl(deviceId?: string | null): UseLightControlReturn
 
   return {
     status,
-    mqttStatus,
     errorMsg,
     setDimmingLevel: (level)   => send(() => ttsCommands.setDimming(targetId, level)),
     setMaxCurrent:   (percent) => send(() => ttsCommands.setMaxCurrent(targetId, percent)),

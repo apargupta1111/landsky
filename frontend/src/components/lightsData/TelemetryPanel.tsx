@@ -1,5 +1,5 @@
 import { Activity, Zap, Thermometer, Clock } from 'lucide-react';
-import type { TelemetryData } from '../../hooks/useTelemetry';
+import type { TelemetryData } from '../../services/nodeRedTelemetry';
 import { tlv } from '../../hooks/useTelemetry';
 
 interface TelemetryPanelProps {

@@ -73,7 +73,7 @@ export function LightsList({
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search by ID, name or address…"
+                    placeholder={searchPlaceholder}
                     className="bg-transparent border-none outline-none text-sm w-full placeholder-[var(--text-secondary)] text-[var(--text-primary)]"
                   />
                 </div>

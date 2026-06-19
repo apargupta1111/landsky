@@ -1,6 +1,6 @@
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { Activity, Zap, Wifi, AlertTriangle, Lightbulb, Network } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -80,12 +80,7 @@ export function Analytics() {
     { name: 'Offline', value: offlineLights, colour: C.error },
   ].filter((d) => d.value > 0);
 
-  // ── Per-gateway light count ────────────────────────────────────────────────
-  const gatewayLightData = gateways.map((gw) => ({
-    name: gw.id,
-    'Connected': gw.connectedLights,
-    'Online': gw.onlineLights,
-  })).slice(0, 10);
+
 
   // ── Per-project summary ────────────────────────────────────────────────────
   const projectData = projects.map((proj) => ({
@@ -151,7 +146,7 @@ export function Analytics() {
                       <Cell key={i} fill={entry.colour} stroke="transparent" />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => `${v} light${v !== 1 ? 's' : ''}`} />
+                  <Tooltip formatter={(v: any) => `${v} light${v !== 1 ? 's' : ''}`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-col gap-2 mt-3">
@@ -295,11 +290,4 @@ export function Analytics() {
   );
 }
 
-function EmptyChart({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-[200px] text-[var(--text-secondary)] text-sm gap-2 border border-dashed border-[var(--panel-border)] rounded-xl">
-      <span className="text-2xl">📡</span>
-      <span className="text-center px-4">{label}</span>
-    </div>
-  );
-}
+

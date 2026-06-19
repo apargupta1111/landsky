@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
-  Sun, Moon, User, Lock, Server, Trash2, Plus,
-  Save, AlertTriangle, CheckCircle, Wifi, Globe, Bell, Shield,
+  Sun, User, Lock, Trash2, Plus,
+  Save, AlertTriangle, CheckCircle, Wifi, Bell, Shield,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { AddLightModal } from '../components/AddLightModal';
-import { ENDPOINTS } from '../config/endpoints';
+
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (

@@ -4,6 +4,7 @@ export interface Light {
   id: string;
   name: string;
   status: 'online' | 'warning' | 'error';
+  ttsDeviceId?: string;
 }
 
 export interface Schedule {

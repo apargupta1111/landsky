@@ -1,32 +1,11 @@
 export const SERVER_IP = '13.205.43.53';
 
-// ─── MQTT (WebSocket) ─────────────────────────────────────────────────────────
-// Set to true once Mosquitto WebSocket is configured on the server (port 9001)
-export const MQTT_ENABLED = false;
-
-export const MQTT_CONFIG = {
-  brokerUrl: `ws://${SERVER_IP}:9001/mqtt`,
-  options: {
-    clientId: `smartlight-ui-${Math.random().toString(16).slice(2, 8)}`,
-    clean: true,
-    reconnectPeriod: 0,   // 0 = no auto-retry until broker is ready
-    connectTimeout: 5000,
-  },
-  topics: {
-    control:   'smartlight/control',
-    telemetry: 'smartlight/telemetry',
-    status:    'smartlight/status',
-  },
-};
-  
 // ─── API Endpoints ────────────────────────────────────────────────────────────
 export const ENDPOINTS = {
   tts: {
     console:  `http://${SERVER_IP}/console`,
-    downlink: `http://${SERVER_IP}/api/v3/as/applications/${encodeURIComponent('hbeon-app-001')}/devices/${encodeURIComponent('streetlight-01')}/down/push`,
   },
   nodered: { base: '/nr-api' },
-
 };
 
 // ─── Device Config ────────────────────────────────────────────────────────────
@@ -42,10 +21,6 @@ export const DEVICE_LOCATIONS: Record<string, { lat: number; lng: number; label:
     label: 'Plot B-6/5, Surajpur Site V — Greater Noida, UP 201306',
   },
 };
-
-// ─── TTS API Keys ─────────────────────────────────────────────────────────────
-// downlink-key: Write downlink traffic — used to push LoRaWAN downlinks from the UI
-export const TTS_API_KEY = 'EOSMYP45ZVPEMUIN5SYJBV5QHJN2A45ZLIQPTBA.266MD3YHDERW6SCKHUF7XSSPDUUL6RNJ7JULIMZWOQ2O7HFKZA';
 
 
 

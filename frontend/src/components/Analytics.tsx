@@ -212,7 +212,7 @@ export function Analytics({ isOpen, onClose }: AnalyticsProps) {
                           <Pie data={statusData} cx="50%" cy="50%" innerRadius={48} outerRadius={75} dataKey="value" paddingAngle={4}>
                             {statusData.map((d, i) => <Cell key={i} fill={d.fill} stroke="transparent" />)}
                           </Pie>
-                          <Tooltip formatter={(v: number, n: string) => [`${v}`, n]} />
+                          <Tooltip formatter={(v: any, n: any) => [`${v}`, n]} />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="flex justify-center gap-4">
@@ -313,7 +313,7 @@ export function Analytics({ isOpen, onClose }: AnalyticsProps) {
                         <PolarGrid stroke={grid} />
                         <PolarAngleAxis dataKey="metric" tick={{ fill: tick, fontSize: 9 }} />
                         <Radar name="Live" dataKey="value" stroke={C.primary} fill={C.primary} fillOpacity={0.2} strokeWidth={2} />
-                        <Tooltip formatter={(v: number) => [`${v.toFixed(1)}`, 'Value']} />
+                        <Tooltip formatter={(v: any) => [`${Number(v).toFixed(1)}`, 'Value']} />
                       </RadarChart>
                     </ResponsiveContainer>
                   ) : <EmptyChart label="Awaiting live data for radar chart" />}

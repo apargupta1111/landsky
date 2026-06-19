@@ -138,3 +138,4 @@ export function LightsData({ light, isOpen, onClose }: Props) {
     </AnimatePresence>
   );
 }
+    
