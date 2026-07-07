@@ -6,6 +6,7 @@ import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
 import { AddLightModal } from '../components/AddLightModal';
+import { BroadcastControlCard } from '../components/BroadcastControlCard';
 import { fetchNodeRedTelemetry, tlv } from '../services/nodeRedTelemetry';
 import { useAppStore } from '../store/useAppStore';
 
@@ -192,6 +193,8 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+          <BroadcastControlCard />
+
           {/* Render all registered devices with live telemetry */}
           {enrichedDevices.map((dev) => (
             <DeviceCard
