@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Wifi, WifiOff, AlertTriangle, Navigation } from 'lucide-react';
+import { X, MapPin, Wifi, WifiOff, Navigation } from 'lucide-react';
 import { fetchNodeRedTelemetry, tlv } from '../services/nodeRedTelemetry';
 import { useAppStore } from '../store/useAppStore';
 import { LightsData } from './LightsData';

@@ -37,7 +37,7 @@ const WARDS: Ward[] = [
 ];
 
 const FAULTS: Fault[] = [
-  { id: 'F-1301', projectId: 'nainital', projectName: 'Nainital', gatewayId: 'GW001', poleId: 'Pole-003', type: 'Power Failure', timestamp: '2026-06-10 09:18', status: 'Open', priority: 'High', assignedTo: 'Team Alpha' },
+  { id: 'F-1301', wardId: 'ward-1', wardName: 'Mallital', gatewayId: 'GW001', poleId: 'Pole-003', type: 'Power Failure', timestamp: '2026-06-10 09:18', status: 'Open', priority: 'High', assignedTo: 'Team Alpha' },
 ];
 
 export const createProjectSlice = (set: any) => ({

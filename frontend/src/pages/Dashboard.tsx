@@ -103,8 +103,6 @@ export function Dashboard() {
   const onlineLights  = enrichedDevices.filter((d) => d.status === 'online').length;
   const offlineLights = enrichedDevices.filter((d) => d.status === 'error').length;
   const faultyLights  = enrichedDevices.filter((d) => d.status === 'warning').length;
-  const todaysEnergy  = '1.4 MWh';
-  const monthlySavings = '28.6%';
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
 

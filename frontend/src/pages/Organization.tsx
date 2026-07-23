@@ -3,18 +3,18 @@ import { Building2, Users, Layers } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export function Organization() {
-  const projects = useAppStore((s) => s.projects);
+  const districts = useAppStore((s) => s.districts);
   const gateways = useAppStore((s) => s.gateways);
   const lights = useAppStore((s) => s.lights);
 
   const totals = useMemo(
     () => ({
-      projects: projects.length,
+      districts: districts.length,
       gateways: gateways.length,
       lights: lights.length,
       onlineLights: lights.filter((light) => light.status === 'Online').length,
     }),
-    [projects, gateways, lights],
+    [districts, gateways, lights],
   );
 
   return (
@@ -45,8 +45,8 @@ export function Organization() {
           <div className="flex items-center gap-3 text-primary mb-4">
             <div className="rounded-2xl bg-primary/10 p-3"><Layers className="w-5 h-5" /></div>
             <div>
-              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Projects</div>
-              <div className="text-xl font-bold">{totals.projects}</div>
+              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Districts</div>
+              <div className="text-xl font-bold">{totals.districts}</div>
             </div>
           </div>
           <div className="text-sm text-[var(--text-secondary)]">Project-level deployments with gateway directories and light inventories.</div>

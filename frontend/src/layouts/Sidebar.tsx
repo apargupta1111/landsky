@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Map as MapIcon, Folder, Activity, Settings, Menu, X, Users, AlertCircle, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Folder, Settings, Menu, X, AlertCircle, ChevronDown } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { CityMap } from '../components/CityMap';
 

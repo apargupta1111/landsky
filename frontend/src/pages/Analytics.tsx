@@ -58,14 +58,14 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 }
 
 export function Analytics() {
-  const projects = useAppStore((s) => s.projects);
+  const districts = useAppStore((s) => s.districts);
   const gateways = useAppStore((s) => s.gateways);
   const lights = useAppStore((s) => s.lights);
   const faults = useAppStore((s) => s.faults);
   const isDarkMode = useAppStore((s) => s.isDarkMode);
 
   // ── Aggregate metrics ──────────────────────────────────────────────────────
-  const totalProjects = projects.length;
+  const totalProjects = districts.length;
   const totalGateways = gateways.length;
   const totalLights = lights.length;
   const onlineLights = lights.filter((l) => l.status === 'Online').length;
@@ -83,7 +83,7 @@ export function Analytics() {
 
 
   // ── Per-project summary ────────────────────────────────────────────────────
-  const projectData = projects.map((proj) => ({
+  const projectData = districts.map((proj: any) => ({
     name: proj.name,
     'Total Lights': proj.lightCount,
     'Online': proj.onlineLights,
@@ -170,7 +170,7 @@ export function Analytics() {
         <Section title="Project Summary" icon={<Activity className="w-5 h-5" />}>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
             {projectData.length > 0 ? (
-              projectData.map((proj, i) => (
+              projectData.map((proj: any, i: number) => (
                 <div key={i} className="p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--panel-border)]">
                   <div className="font-bold text-sm mb-2">{proj.name}</div>
                   <div className="grid grid-cols-3 gap-2 text-xs text-[var(--text-secondary)]">
