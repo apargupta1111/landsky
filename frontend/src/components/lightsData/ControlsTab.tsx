@@ -1,24 +1,38 @@
 import { useState } from 'react';
-import { Power, Settings2, AlertTriangle } from 'lucide-react';
+import { Power, Settings2, AlertTriangle, Sun, Snowflake, RefreshCw } from 'lucide-react';
+import { useColorState } from '../../hooks/useColorState';
 
 interface ControlsTabProps {
+  deviceId?: string | null;
   ctrl: {
     status: 'idle' | 'sending' | 'success' | 'error';
     setDimmingLevel: (level: number) => Promise<void>;
     powerOn: () => Promise<void>;
     powerOff: () => Promise<void>;
     resetDriver: () => Promise<void>;
+    setWarmLight: () => Promise<void>;
+    setWhiteLight: () => Promise<void>;
   };
 }
 
-export function ControlsTab({ctrl }: ControlsTabProps) {
+export function ControlsTab({ ctrl, deviceId }: ControlsTabProps) {
   const [dimLevel,      setDimLevel]      = useState(100);
   const [pendingReset,  setPendingReset]  = useState(false);
+  const { colorMode, setColorMode, isLoading: isLoadingColor } = useColorState(deviceId);
 
   const handleReset = async () => {
     if (!pendingReset) { setPendingReset(true); return; }
     await ctrl.resetDriver();
     setPendingReset(false);
+  };
+
+  const handleColorSwitch = async (mode: 'warm' | 'white') => {
+    if (mode === 'warm') {
+      await ctrl.setWarmLight();
+    } else {
+      await ctrl.setWhiteLight();
+    }
+    setColorMode(mode);
   };
 
   const disabled = ctrl.status === 'sending';
@@ -72,6 +86,66 @@ export function ControlsTab({ctrl }: ControlsTabProps) {
           >
             Power OFF
           </button>
+        </div>
+
+        {/* Light Color Temperature */}
+        <div className="pt-2 border-t border-[var(--panel-border)]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[var(--text-secondary)] text-sm font-medium">
+                Light Color
+              </span>
+              {isLoadingColor && <RefreshCw className="w-3 h-3 animate-spin text-[var(--text-secondary)]" />}
+            </div>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all duration-300 ${
+                colorMode === 'warm'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                  : 'bg-sky-400/20 text-sky-300 border border-sky-400/40'
+              }`}
+            >
+              {colorMode === 'warm' ? (
+                <Sun className="w-2.5 h-2.5" />
+              ) : (
+                <Snowflake className="w-2.5 h-2.5" />
+              )}
+              {colorMode === 'warm' ? 'Warm' : 'White'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => handleColorSwitch('warm')}
+              disabled={disabled}
+              className={`group py-2.5 rounded-lg text-sm font-bold transition-all duration-300 disabled:opacity-40 ${
+                colorMode === 'warm'
+                  ? 'bg-amber-500/25 text-amber-300 border-2 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                  : 'bg-amber-500/10 text-amber-400/70 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1.5">
+                <Sun className={`w-3.5 h-3.5 transition-transform duration-300 ${colorMode === 'warm' ? 'scale-110' : 'group-hover:scale-105'}`} />
+                <span>Warm</span>
+              </div>
+              <div className="text-[9px] opacity-50 mt-0.5">3000K</div>
+            </button>
+
+            <button
+              onClick={() => handleColorSwitch('white')}
+              disabled={disabled}
+              className={`group py-2.5 rounded-lg text-sm font-bold transition-all duration-300 disabled:opacity-40 ${
+                colorMode === 'white'
+                  ? 'bg-sky-400/25 text-sky-200 border-2 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
+                  : 'bg-sky-400/10 text-sky-400/70 border border-sky-400/20 hover:bg-sky-400/20 hover:text-sky-300'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1.5">
+                <Snowflake className={`w-3.5 h-3.5 transition-transform duration-300 ${colorMode === 'white' ? 'scale-110' : 'group-hover:scale-105'}`} />
+                <span>White</span>
+              </div>
+              <div className="text-[9px] opacity-50 mt-0.5">6500K</div>
+            </button>
+          </div>
         </div>
 
         {/* Reset Driver */}

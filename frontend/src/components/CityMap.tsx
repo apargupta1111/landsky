@@ -380,7 +380,7 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
               <div ref={mapRef} className="flex-1 z-0" style={{ minHeight: 0 }} />
 
               {/* ── Device sidebar list ──────────────────────────────── */}
-              <div className="hidden lg:flex flex-col w-64 shrink-0 border-l border-[var(--panel-border)] bg-[var(--bg-color)]/60 backdrop-blur-sm overflow-y-auto scrollbar-hide">
+              {/* <div className="hidden lg:flex flex-col w-64 shrink-0 border-l border-[var(--panel-border)] bg-[var(--bg-color)]/60 backdrop-blur-sm overflow-y-auto scrollbar-hide">
                 <div className="p-4 border-b border-[var(--panel-border)]">
                   <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Device List</p>
                 </div>
@@ -450,7 +450,7 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
                     </div>
                   )}
                 </div>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         </motion.div>

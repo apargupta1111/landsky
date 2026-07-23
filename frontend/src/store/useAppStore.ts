@@ -7,7 +7,7 @@ import { createGatewaySlice } from './gatewayStore';
 import { createProjectSlice } from './projectStore';
 import { createAssetSlice } from './assetStore';
 
-import type { Device, Project, Gateway, LightAsset, Fault, TelemetrySnapshot, Page } from './types';
+import type { Device, District, Nagarpalika, Ward, Gateway, LightAsset, Fault, TelemetrySnapshot, Page } from './types';
 
 // ── Root Store Interface ───────────────────────────────────────────────────
 export interface AppState {
@@ -28,10 +28,19 @@ export interface AppState {
   addDevice: (device: Device) => void;
   removeDevice: (id: string) => void;
 
-  projects: Project[];
+  districts: District[];
+  selectedDistrictId: string | null;
+  setSelectedDistrictId: (id: string | null) => void;
+
+  nagarpalikas: Nagarpalika[];
+  selectedNagarpalikaId: string | null;
+  setSelectedNagarpalikaId: (id: string | null) => void;
+
+  wards: Ward[];
+  selectedWardId: string | null;
+  setSelectedWardId: (id: string | null) => void;
+
   faults: Fault[];
-  selectedProjectId: string | null;
-  setSelectedProjectId: (id: string | null) => void;
 
   gateways: Gateway[];
   selectedGatewayId: string | null;

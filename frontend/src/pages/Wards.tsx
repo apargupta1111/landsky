@@ -2,38 +2,36 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, Search, MapPin } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
-export function ProjectDetails() {
-  const selectedDistrictId = useAppStore((s) => s.selectedDistrictId);
-  const districts = useAppStore((s) => s.districts);
-  const wards = useAppStore((s) => s.wards);
+export function Wards() {
+  const selectedNagarpalikaId = useAppStore((s) => s.selectedNagarpalikaId);
+  const nagarpalikas = useAppStore((s) => s.nagarpalikas);
+  const allWards = useAppStore((s) => s.wards);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
-  const setSelectedDistrictId = useAppStore((s) => s.setSelectedDistrictId);
+  const setSelectedNagarpalikaId = useAppStore((s) => s.setSelectedNagarpalikaId);
   const setSelectedWardId = useAppStore((s) => s.setSelectedWardId);
 
-  const district = districts.find((item) => item.id === selectedDistrictId);
-  // For simplicity, we assume we just show all wards or we'd filter by nagarpalika.
-  // The user provided wards for Bhimtal, but as superadmin they click District -> see Wards.
-  const districtWards = wards;
+  const nagarpalika = nagarpalikas.find((item) => item.id === selectedNagarpalikaId);
+  const nagarpalikaWards = allWards.filter((w) => w.nagarpalikaId === selectedNagarpalikaId);
 
   const [query, setQuery] = useState('');
 
   const filteredWards = useMemo(
-    () => districtWards.filter((ward) =>
+    () => nagarpalikaWards.filter((ward) =>
       ward.name.toLowerCase().includes(query.toLowerCase()) ||
       ward.status.toLowerCase().includes(query.toLowerCase())
     ),
-    [districtWards, query],
+    [nagarpalikaWards, query],
   );
 
-  if (!district) {
+  if (!nagarpalika) {
     return (
       <div className="glass-panel rounded-3xl border border-[var(--panel-border)] p-6">
-        <div className="text-sm text-[var(--text-secondary)]">No district selected.</div>
+        <div className="text-sm text-[var(--text-secondary)]">No nagarpalika selected.</div>
         <button
-          onClick={() => setCurrentPage('projects')}
+          onClick={() => setCurrentPage('nagarpalikas')}
           className="mt-4 px-4 py-2 rounded-full bg-primary text-black font-semibold"
         >
-          Back to Districts
+          Back to Nagarpalikas
         </button>
       </div>
     );
@@ -45,15 +43,15 @@ export function ProjectDetails() {
         <div>
           <button
             onClick={() => {
-              setSelectedDistrictId(null);
-              setCurrentPage('projects');
+              setSelectedNagarpalikaId(null);
+              setCurrentPage('nagarpalikas');
             }}
             className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-primary transition-colors mb-3"
           >
-            <ChevronLeft className="w-4 h-4" /> Back to Districts
+            <ChevronLeft className="w-4 h-4" /> Back to Nagarpalikas
           </button>
           <h1 className="text-3xl font-bold">Wards Directory</h1>
-          <p className="mt-2 text-[var(--text-secondary)]">{district.name} District · {districtWards.length} Wards</p>
+          <p className="mt-2 text-[var(--text-secondary)]">{nagarpalika.name} Nagarpalika · {nagarpalikaWards.length} Wards</p>
         </div>
       </div>
 
@@ -92,9 +90,7 @@ export function ProjectDetails() {
                   key={ward.id}
                   onClick={() => {
                     setSelectedWardId(ward.id);
-                    // For now, if they click a ward, we could route to gateways or a WardDetails page.
-                    // We'll route them to 'gateways' to show gateways for this ward.
-                    setCurrentPage('gateways');
+                    setCurrentPage('wardDetails');
                   }}
                   className="glass-panel rounded-3xl border glowing-border p-5 text-left hover:scale-[1.01] transition-transform"
                 >

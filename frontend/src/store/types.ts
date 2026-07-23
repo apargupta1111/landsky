@@ -6,15 +6,39 @@ export interface Device {
   lng: number;
   ttsDeviceId: string;
   addedAt: string;
+  wardId?: string;
 }
 
-export interface Project {
+export interface District {
   id: string;
   name: string;
+  nagarpalikaCount: number;
+  wardCount: number;
   gatewayCount: number;
   lightCount: number;
   onlineLights: number;
   faults: number;
+  status: 'Active' | 'At Risk';
+}
+
+export interface Nagarpalika {
+  id: string;
+  districtId: string;
+  name: string;
+  wardCount: number;
+  gatewayCount: number;
+  lightCount: number;
+  onlineLights: number;
+  status: 'Active' | 'At Risk';
+}
+
+export interface Ward {
+  id: string;
+  nagarpalikaId: string;
+  name: string;
+  gatewayCount: number;
+  lightCount: number;
+  onlineLights: number;
   status: 'Active' | 'At Risk';
 }
 
@@ -32,7 +56,8 @@ export interface Gateway {
   createdAt: string;
   updatedAt: string;
   id: string;
-  projectId: string;
+  wardId: string;
+  districtId: string;
   connectedLights: number;
   onlineLights: number;
   faults: number;
@@ -63,8 +88,8 @@ export interface LightAsset {
 
 export interface Fault {
   id: string;
-  projectId: string;
-  projectName: string;
+  wardId: string;
+  wardName: string;
   gatewayId: string;
   poleId: string;
   type: string;
@@ -105,6 +130,10 @@ export interface ApiGatewayItem {
 export type Page =
   | 'dashboard'
   | 'projects'
+  | 'nagarpalikas'
+  | 'nagarpalikaDetails'
+  | 'wards'
+  | 'wardDetails'
   | 'gateways'
   | 'analytics'
   | 'settings'
