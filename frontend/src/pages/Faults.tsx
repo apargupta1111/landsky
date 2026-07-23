@@ -8,7 +8,7 @@ export function Faults() {
   const faults = useAppStore((s) => s.faults);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
 
-  const [projectFilter, setProjectFilter] = useState('');
+  const [wardFilter, setWardFilter] = useState('');
   const [gatewayFilter, setGatewayFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -17,20 +17,20 @@ export function Faults() {
 
   const filteredFaults = useMemo(
     () => faults.filter((fault) => {
-      const matchesProject = projectFilter ? fault.projectId === projectFilter : true;
+      const matchesWard = wardFilter ? fault.wardName.toLowerCase().includes(wardFilter.toLowerCase()) : true;
       const matchesGateway = gatewayFilter ? fault.gatewayId === gatewayFilter : true;
       const matchesPriority = priorityFilter ? fault.priority === priorityFilter : true;
       const matchesStatus = statusFilter ? fault.status === statusFilter : true;
       const matchesDate = dateFilter ? fault.timestamp.startsWith(dateFilter) : true;
-      return matchesProject && matchesGateway && matchesPriority && matchesStatus && matchesDate;
+      return matchesWard && matchesGateway && matchesPriority && matchesStatus && matchesDate;
     }),
-    [faults, projectFilter, gatewayFilter, priorityFilter, statusFilter, dateFilter],
+    [faults, wardFilter, gatewayFilter, priorityFilter, statusFilter, dateFilter],
   );
 
   const grouped = useMemo(() => {
     return filteredFaults.reduce((acc: Record<string, typeof faults>, fault) => {
-      acc[fault.projectName] = acc[fault.projectName] || [];
-      acc[fault.projectName].push(fault);
+      acc[fault.wardName] = acc[fault.wardName] || [];
+      acc[fault.wardName].push(fault);
       return acc;
     }, {});
   }, [filteredFaults]);
@@ -56,9 +56,9 @@ export function Faults() {
             <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
               <Search className="w-4 h-4 text-[var(--text-secondary)]" />
               <input
-                value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value)}
-                placeholder="Filter by project"
+                value={wardFilter}
+                onChange={(e) => setWardFilter(e.target.value)}
+                placeholder="Filter by ward"
                 className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
               />
             </div>
@@ -124,17 +124,17 @@ export function Faults() {
             No faults match the selected filters.
           </div>
         ) : (
-          Object.entries(grouped).map(([projectName, projectFaults]) => (
-            <div key={projectName} className="glass-panel rounded-3xl border border-[var(--panel-border)] p-5">
+          Object.entries(grouped).map(([wardName, wardFaults]) => (
+            <div key={wardName} className="glass-panel rounded-3xl border border-[var(--panel-border)] p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold">{projectName}</h2>
-                  <p className="text-sm text-[var(--text-secondary)]">{projectFaults.length} fault{projectFaults.length !== 1 ? 's' : ''}</p>
+                  <h2 className="text-lg font-bold">Ward: {wardName}</h2>
+                  <p className="text-sm text-[var(--text-secondary)]">{wardFaults.length} fault{wardFaults.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-4">
-                {projectFaults.map((fault) => (
+                {wardFaults.map((fault) => (
                   <button
                     key={fault.id}
                     onClick={() => setActiveFault(fault)}
@@ -184,7 +184,7 @@ export function Faults() {
               </div>
               <div className="p-6 space-y-4">
                 {[
-                  ['Project', activeFault.projectName],
+                  ['Ward', activeFault.wardName],
                   ['Gateway', activeFault.gatewayId],
                   ['Pole', activeFault.poleId],
                   ['Fault Type', activeFault.type],

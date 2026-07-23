@@ -10,6 +10,8 @@
 
 const mqtt = require("mqtt");
 const { updateTelemetry } = require("./telemetryStore");
+const { getTargetCommand, clearTargetCommand, incrementRetry } = require("./commandStore");
+const { sendDownlink } = require("./ttsApiService");
 
 let client = null;
 
@@ -88,6 +90,25 @@ function initMqttClient() {
 
       console.log(`📨 Telemetry [${deviceId}]:`, JSON.stringify(telemetryData).slice(0, 120));
       updateTelemetry(deviceId, telemetryData);
+
+      // Verify if telemetry matches our last command
+      const target = getTargetCommand(deviceId);
+      if (target && telemetryData.brightness_percent !== undefined && telemetryData.brightness_percent !== null) {
+        // Allow a small delta of +/- 1% due to rounding
+        if (Math.abs(telemetryData.brightness_percent - target.expectedBrightness) > 1) {
+          if (target.retryCount < 3) { // Limit retries to prevent infinite loops
+            console.log(`⚠️ Telemetry brightness ${telemetryData.brightness_percent}% does not match target ${target.expectedBrightness}% for ${deviceId}. Resending downlink! (Attempt ${target.retryCount + 1})`);
+            incrementRetry(deviceId);
+            sendDownlink(deviceId, target.hexPayload, 1).catch(err => console.error(`❌ Retry Downlink error for ${deviceId}:`, err.response?.data || err.message));
+          } else {
+            console.log(`❌ Max retries reached for ${deviceId}. Command skipped by device.`);
+            clearTargetCommand(deviceId); // Give up to prevent spam
+          }
+        } else {
+          console.log(`✅ Telemetry confirms target brightness ${target.expectedBrightness}% for ${deviceId}. Command applied.`);
+          clearTargetCommand(deviceId);
+        }
+      }
 
     } catch (err) {
       console.error("❌ MQTT message parse error:", err.message);

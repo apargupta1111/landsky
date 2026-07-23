@@ -12,6 +12,7 @@ const express = require("express");
 const router = express.Router();
 const { sendDownlink } = require("../services/ttsApiService");
 const { setColor, getColor, getAllColors } = require("../services/colorStore");
+const { setTargetCommand } = require("../services/commandStore");
 
 // ── Payload Encoders ───────────────────────────────────────────────────────────
 // TTS downlink payload is a SINGLE BYTE: the brightness value (0–100 decimal).
@@ -82,6 +83,16 @@ router.post("/control", async (req, res) => {
       setColor(device_id, "warm");
     } else if (method === "setWhiteLight") {
       setColor(device_id, "white");
+    }
+
+    // Persist target brightness for retries
+    let expectedBrightness = null;
+    if (method === "setDimming") expectedBrightness = Math.max(0, Math.min(100, Math.round(value || 0)));
+    else if (method === "powerOn") expectedBrightness = 100;
+    else if (method === "powerOff" || method === "resetDriver") expectedBrightness = 0;
+    
+    if (expectedBrightness !== null) {
+      setTargetCommand(device_id, method, expectedBrightness, hexPayload);
     }
 
     res.json({

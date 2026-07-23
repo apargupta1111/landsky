@@ -6,13 +6,13 @@ import { LightsData } from '../components/LightsData';
 export function GatewayDetails() {
   const selectedGatewayId = useAppStore((s) => s.selectedGatewayId);
   const gateways = useAppStore((s) => s.gateways);
-  const projects = useAppStore((s) => s.projects);
+  const districts = useAppStore((s) => s.districts);
   const lights = useAppStore((s) => s.lights);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const setSelectedGatewayId = useAppStore((s) => s.setSelectedGatewayId);
 
   const gateway = gateways.find((item) => item.id === selectedGatewayId);
-  const project = projects.find((p) => p.id === gateway?.projectId);
+  const district = districts.find((d) => d.id === gateway?.districtId);
   const gatewayLights = lights.filter((light) => light.gatewayId === selectedGatewayId);
 
   const [query, setQuery] = useState('');
@@ -56,7 +56,7 @@ export function GatewayDetails() {
           </button>
           <h1 className="text-3xl font-bold">Connected Lights</h1>
           <p className="mt-2 text-[var(--text-secondary)]">
-            {gateway.id} · {project?.name ?? 'Project'}
+            {gateway.id} · {district?.name ?? 'District'}
           </p>
         </div>
       </div>

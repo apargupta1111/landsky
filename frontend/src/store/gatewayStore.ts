@@ -52,6 +52,8 @@ console.log("URL:", `${SERVER_IP}/gateways`);
         status: item.connectionStatus ? 'Online' : 'Offline',
         lat: Number(item.location?.y ?? 0),
         lng: Number(item.location?.x ?? 0),
+        wardId: item.wardId ?? '',
+        districtId: item.districtId ?? '',
       }));
 
       set({ gateways: formattedGateways, isLoadingGateways: false });

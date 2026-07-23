@@ -3,11 +3,13 @@ require("dotenv").config();
 const app = require("./src/app");
 const { initMqttClient } = require("./src/services/mqttService");
 const { initTelemetryStore } = require("./src/services/telemetryStore");
+const { initCommandStore } = require("./src/services/commandStore");
 
 const PORT = process.env.PORT || 5000;
 
-// Initialize the in-memory telemetry store
+// Initialize the in-memory telemetry store and command store
 initTelemetryStore();
+initCommandStore();
 
 // Connect to TTS MQTT for live uplink telemetry
 initMqttClient();
