@@ -4,12 +4,22 @@ import { useAppStore } from '../store/useAppStore';
 
 export function Gateways() {
   // ── Zustand State Binding ───────────────────────────────────────────────
-  const gateways = useAppStore((s) => s.gateways);
+  const allGateways = useAppStore((s) => s.gateways);
+  const selectedWardId = useAppStore((s) => s.selectedWardId);
+  const wards = useAppStore((s) => s.wards);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const setSelectedGatewayId = useAppStore((s) => s.setSelectedGatewayId);
   const fetchGateways = useAppStore((s) => s.fetchGateways);
   const isLoadingGateways = useAppStore((s) => s.isLoadingGateways);
   const gatewayFetchError = useAppStore((s) => s.gatewayFetchError);
+
+  const ward = wards.find(w => w.id === selectedWardId);
+  
+  // Filter gateways by selected ward if one is selected
+  // Note: currently mock data in backend doesn't have wardId, so we just show all if no ward is selected or fake it.
+  const gateways = selectedWardId 
+    ? allGateways.filter(g => g.wardId === selectedWardId || true) // Remove `|| true` when real API supports wardId
+    : allGateways;
 
   // ── Search & Query State ─────────────────────────────────────────────────
   const [query, setQuery] = useState('');
@@ -125,12 +135,12 @@ export function Gateways() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={() => setCurrentPage(ward ? 'wards' : 'dashboard')}
             className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-primary transition-colors mb-3 font-medium"
           >
-            <ChevronLeft className="w-4 h-4" /> Back to Dashboard
+            <ChevronLeft className="w-4 h-4" /> {ward ? 'Back to Wards' : 'Back to Dashboard'}
           </button>
-          <h1 className="text-3xl font-bold tracking-tight">All Gateways</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{ward ? `${ward.name} Gateways` : 'All Gateways'}</h1>
           <p className="mt-1 text-[var(--text-secondary)] text-sm">{gateways.length} total active hardware nodes connected</p>
         </div>
       </div>

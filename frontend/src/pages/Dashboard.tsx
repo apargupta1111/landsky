@@ -17,7 +17,9 @@ export function Dashboard() {
 
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const devices        = useAppStore((s) => s.devices);
-  const projects       = useAppStore((s) => s.projects);
+  const districts      = useAppStore((s) => s.districts);
+  const nagarpalikas   = useAppStore((s) => s.nagarpalikas);
+  const wards          = useAppStore((s) => s.wards);
   const gateways       = useAppStore((s) => s.gateways);
   const lights         = useAppStore((s) => s.lights);
 
@@ -93,7 +95,9 @@ export function Dashboard() {
   });
 
   // ── KPI aggregates ────────────────────────────────────────────────────────
-  const totalProjects = projects.length;
+  const totalDistricts = districts.length;
+  const totalNagarpalikas = nagarpalikas.length;
+  const totalWards = wards.length;
   const totalGateways = gateways.length;
   const totalLights   = lights.length;
   const onlineLights  = enrichedDevices.filter((d) => d.status === 'online').length;
@@ -121,11 +125,19 @@ export function Dashboard() {
       )}
 
       {/* ── KPI Row ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
         <KpiCard
-          title="Total Projects"
-          value={`${totalProjects}`}
+          title="Total Districts"
+          value={`${totalDistricts}`}
           onClick={() => setCurrentPage('projects')}
+        />
+        <KpiCard
+          title="Total Nagarpalikas"
+          value={`${totalNagarpalikas}`}
+        />
+        <KpiCard
+          title="Total Wards"
+          value={`${totalWards}`}
         />
         <KpiCard
           title="Total Gateways"
@@ -151,16 +163,7 @@ export function Dashboard() {
           title="Faulty Lights"
           value={`${faultyLights}`}
         />
-        <KpiCard
-          title="Today's Energy"
-          value={todaysEnergy}
-          sub="Estimated output"
-        />
-        <KpiCard
-          title="Monthly Savings"
-          value={monthlySavings}
-          sub="Compared to last month"
-        />
+        
       </div>
       
       
@@ -193,7 +196,7 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-          <BroadcastControlCard />
+          <BroadcastControlCard devices={enrichedDevices} />
 
           {/* Render all registered devices with live telemetry */}
           {enrichedDevices.map((dev) => (

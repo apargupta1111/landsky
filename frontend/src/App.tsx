@@ -1,7 +1,9 @@
 import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Projects } from './pages/Projects';
-import { ProjectDetails } from './pages/ProjectDetails';
+import { Nagarpalikas } from './pages/Nagarpalikas';
+import { Wards } from './pages/Wards';
+import { WardDetails } from './pages/WardDetails';
 import { Gateways } from './pages/Gateways';
 import { GatewayDetails } from './pages/GatewayDetails';
 import { Analytics } from './pages/Analytics';
@@ -23,7 +25,9 @@ function App() {
     <MainLayout>
       {currentPage === 'dashboard' && <Dashboard />}
       {currentPage === 'projects' && <Projects />}
-      {currentPage === 'projectDetails' && <ProjectDetails />}
+      {currentPage === 'nagarpalikas' && <Nagarpalikas />}
+      {currentPage === 'wards' && <Wards />}
+      {currentPage === 'wardDetails' && <WardDetails />}
       {currentPage === 'gateways' && <Gateways />}
       {currentPage === 'gatewayDetails' && <GatewayDetails />}
       {currentPage === 'analytics' && <Analytics />}

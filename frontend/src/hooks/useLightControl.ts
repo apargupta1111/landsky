@@ -12,6 +12,8 @@ interface UseLightControlReturn {
   resetDriver: () => Promise<void>;
   powerOn: () => Promise<void>;
   powerOff: () => Promise<void>;
+  setWarmLight: () => Promise<void>;
+  setWhiteLight: () => Promise<void>;
 }
 
 export function useLightControl(deviceId?: string | null): UseLightControlReturn {
@@ -47,5 +49,7 @@ export function useLightControl(deviceId?: string | null): UseLightControlReturn
     resetDriver:     ()        => send(() => ttsCommands.resetDriver(targetId)),
     powerOn:         ()        => send(() => ttsCommands.powerOn(targetId)),
     powerOff:        ()        => send(() => ttsCommands.powerOff(targetId)),
+    setWarmLight:    ()        => send(() => ttsCommands.setWarmLight(targetId)),
+    setWhiteLight:   ()        => send(() => ttsCommands.setWhiteLight(targetId)),
   };
 }

@@ -11,6 +11,7 @@
 const express = require("express");
 const router = express.Router();
 const { sendDownlink } = require("../services/ttsApiService");
+const { setColor, getColor, getAllColors } = require("../services/colorStore");
 
 // ── Payload Encoders ───────────────────────────────────────────────────────────
 // TTS downlink payload is a SINGLE BYTE: the brightness value (0–100 decimal).
@@ -26,12 +27,14 @@ function encodeBrightness(level) {
 
 const POWER_ON_HEX  = "64";  // 100 decimal = 100% brightness
 const POWER_OFF_HEX = "00";  // 0 decimal = off
+const WARM_LIGHT_HEX = "6F"; // warm CCT colour
+const WHITE_LIGHT_HEX = "70"; // white CCT colour
 
 /**
  * POST /smartlight/control
  * Body: { device_id, topic, method, value }
  * 
- * method: setDimming | setMaxCurrent | powerOn | powerOff | resetDriver
+ * method: setDimming | setMaxCurrent | powerOn | powerOff | resetDriver | setWarmLight | setWhiteLight
  */
 router.post("/control", async (req, res) => {
   const { device_id, method, value } = req.body;
@@ -59,6 +62,12 @@ router.post("/control", async (req, res) => {
     case "resetDriver":
       hexPayload = POWER_OFF_HEX; // reset = turn off
       break;
+    case "setWarmLight":
+      hexPayload = WARM_LIGHT_HEX;
+      break;
+    case "setWhiteLight":
+      hexPayload = WHITE_LIGHT_HEX;
+      break;
     default:
       return res.status(400).json({ error: `Unknown method: ${method}` });
   }
@@ -67,6 +76,13 @@ router.post("/control", async (req, res) => {
     // Send the downlink via TTS API
     await sendDownlink(device_id, hexPayload, 1);
     console.log(`✅ Downlink sent: ${device_id} → 0x${hexPayload} (${parseInt(hexPayload, 16)}%)`);
+
+    // Persist color state for warm/white commands
+    if (method === "setWarmLight") {
+      setColor(device_id, "warm");
+    } else if (method === "setWhiteLight") {
+      setColor(device_id, "white");
+    }
 
     res.json({
       ok: true,
@@ -81,6 +97,32 @@ router.post("/control", async (req, res) => {
       error: err.response?.data?.message || err.message,
     });
   }
+});
+
+// ── Color State Endpoints ────────────────────────────────────────────────────
+
+/**
+ * GET /smartlight/color-state
+ * Returns the last-known color temperature for ALL devices.
+ */
+router.get("/color-state", (req, res) => {
+  res.json(getAllColors());
+});
+
+/**
+ * GET /smartlight/:deviceId/color-state
+ * Returns the last-known color temperature for a specific device.
+ */
+router.get("/:deviceId/color-state", (req, res) => {
+  const { deviceId } = req.params;
+  const state = getColor(deviceId);
+
+  if (!state) {
+    // No color command sent yet — default to white
+    return res.json({ device_id: deviceId, color: "white", ts: null });
+  }
+
+  res.json(state);
 });
 
 module.exports = router;
