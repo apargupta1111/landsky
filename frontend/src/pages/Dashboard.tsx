@@ -77,7 +77,7 @@ export function Dashboard() {
     const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
     const status: 'online' | 'warning' | 'error' =
       !hasData ? 'error'
-      : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
+      : faultStatus && faultStatus !== '–' && faultStatus !== '0' && faultStatus.toLowerCase() !== 'normal' ? 'warning'
       : 'online';
 
     const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;

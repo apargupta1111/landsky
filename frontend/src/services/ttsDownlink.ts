@@ -51,7 +51,7 @@ export async function sendControlCommand(
       value: value ?? 0,
     };
 
-    // Send command twice with 500ms gap
+    // Send command twice with 3s gap
     for (let i = 0; i < 2; i++) {
       const res = await fetch(
         `${ENDPOINTS.backend.base}/smartlight/control`,
@@ -78,9 +78,9 @@ export async function sendControlCommand(
         `[Control] Sent ${method} (${i + 1}/2) for ${deviceId} (topic: ${topic})`
       );
 
-      // Wait 500ms before the second send
+      // Wait 3s before the second send to prevent TTS collision
       if (i === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
 
@@ -114,7 +114,7 @@ export async function sendColorCommand(
       value: 0,
     };
 
-    // Send command 4 times with 500ms gap for reliable color switching
+    // Send command twice with 3s gap
     for (let i = 0; i < 2; i++) {
       const res = await fetch(
         `${ENDPOINTS.backend.base}/smartlight/control`,
@@ -138,12 +138,12 @@ export async function sendColorCommand(
       }
 
       console.log(
-        `[Control] Sent ${method} (${i + 1}/4) for ${deviceId} (topic: ${topic})`
+        `[Control] Sent ${method} (${i + 1}/2) for ${deviceId} (topic: ${topic})`
       );
 
-      // Wait 500ms before next send (skip after last)
-      if (i < 3) {
-        await new Promise(resolve => setTimeout(resolve,100));
+      // Wait 3s before next send to prevent TTS collision
+      if (i === 0) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
 
