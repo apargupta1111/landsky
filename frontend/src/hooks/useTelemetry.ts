@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchNodeRedTelemetry } from '../services/nodeRedTelemetry';
-import type { TelemetryData } from '../services/nodeRedTelemetry';
+import { fetchTelemetry } from '../services/backendTelemetry';
+import type { TelemetryData } from '../services/backendTelemetry';
 
 interface UseTelemetryReturn {
   data: TelemetryData | null;
@@ -21,17 +21,16 @@ export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
-    try {
-      const result = await fetchNodeRedTelemetry(deviceId ?? undefined);
-      setData(result);
+    // fetchTelemetry never throws — it returns {} on any error
+    const result = await fetchTelemetry(deviceId ?? undefined);
+    const hasData = Object.keys(result).length > 0;
+    setData(hasData ? result : null);
+    if (hasData) {
       setLastUpdated(new Date());
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
+      setError(null);
     }
-  }, []);
+    setIsLoading(false);
+  }, [deviceId]);
 
   useEffect(() => {
     load();
@@ -48,5 +47,6 @@ export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
 export function tlv(data: TelemetryData | null, key: string, fallback = '–'): string {
   const arr = data?.[key];
   if (!arr?.length) return fallback;
-  return arr[0].value;
+  const val = arr[0].value;
+  return val === '–' || val === '' || val === null ? fallback : val;
 }

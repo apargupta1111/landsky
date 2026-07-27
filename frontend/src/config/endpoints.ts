@@ -5,6 +5,9 @@ export const ENDPOINTS = {
   tts: {
     console:  `http://${SERVER_IP}/console`,
   },
+  // Points to the custom Node.js backend (proxied via /nr-api in Nginx / Vite)
+  backend: { base: '/nr-api' },
+  /** @deprecated use backend instead */
   nodered: { base: '/nr-api' },
 };
 

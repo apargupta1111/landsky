@@ -54,7 +54,7 @@ export async function sendControlCommand(
     // Send command twice with 500ms gap
     for (let i = 0; i < 2; i++) {
       const res = await fetch(
-        `${ENDPOINTS.nodered.base}/smartlight/control`,
+        `${ENDPOINTS.backend.base}/smartlight/control`,
         {
           method: 'POST',
           headers: {
@@ -117,7 +117,7 @@ export async function sendColorCommand(
     // Send command 4 times with 500ms gap for reliable color switching
     for (let i = 0; i < 2; i++) {
       const res = await fetch(
-        `${ENDPOINTS.nodered.base}/smartlight/control`,
+        `${ENDPOINTS.backend.base}/smartlight/control`,
         {
           method: 'POST',
           headers: {

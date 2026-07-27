@@ -17,7 +17,7 @@ export function useColorState(deviceId?: string | null) {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${ENDPOINTS.nodered.base}/smartlight/${deviceId}/color-state`);
+      const res = await fetch(`${ENDPOINTS.backend.base}/smartlight/${deviceId}/color-state`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
