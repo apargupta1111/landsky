@@ -91,22 +91,42 @@ function initMqttClient() {
       console.log(`📨 Telemetry [${deviceId}]:`, JSON.stringify(telemetryData).slice(0, 120));
       updateTelemetry(deviceId, telemetryData);
 
-      // Verify if telemetry matches our last command
+      // ── Command verification & retry ────────────────────────────────────────
       const target = getTargetCommand(deviceId);
-      if (target && telemetryData.brightness_percent !== undefined && telemetryData.brightness_percent !== null) {
-        // Allow a small delta of +/- 1% due to rounding
-        if (Math.abs(telemetryData.brightness_percent - target.expectedBrightness) > 1) {
-          if (target.retryCount < 3) { // Limit retries to prevent infinite loops
-            console.log(`⚠️ Telemetry brightness ${telemetryData.brightness_percent}% does not match target ${target.expectedBrightness}% for ${deviceId}. Resending downlink! (Attempt ${target.retryCount + 1})`);
-            incrementRetry(deviceId);
-            sendDownlink(deviceId, target.hexPayload, 1).catch(err => console.error(`❌ Retry Downlink error for ${deviceId}:`, err.response?.data || err.message));
+      if (target) {
+        const maxRetries = 3;
+
+        // --- Case 1: brightness-based commands (dimming / on / off) ---
+        if (target.expectedBrightness !== null && telemetryData.brightness_percent !== undefined && telemetryData.brightness_percent !== null) {
+          if (Math.abs(telemetryData.brightness_percent - target.expectedBrightness) > 1) {
+            if (target.retryCount < maxRetries) {
+              console.log(`⚠️  Brightness mismatch for ${deviceId}: got ${telemetryData.brightness_percent}%, expected ${target.expectedBrightness}%. Resending... (attempt ${target.retryCount + 1})`);
+              incrementRetry(deviceId);
+              sendDownlink(deviceId, target.hexPayload, 1).catch(err => console.error(`❌ Retry downlink error for ${deviceId}:`, err.response?.data || err.message));
+            } else {
+              console.log(`❌ Max retries reached for ${deviceId} (brightness). Giving up.`);
+              clearTargetCommand(deviceId);
+            }
           } else {
-            console.log(`❌ Max retries reached for ${deviceId}. Command skipped by device.`);
-            clearTargetCommand(deviceId); // Give up to prevent spam
+            console.log(`✅ Brightness confirmed ${target.expectedBrightness}% for ${deviceId}.`);
+            clearTargetCommand(deviceId);
           }
-        } else {
-          console.log(`✅ Telemetry confirms target brightness ${target.expectedBrightness}% for ${deviceId}. Command applied.`);
-          clearTargetCommand(deviceId);
+
+        // --- Case 2: colour-based commands (warm / white) ---
+        } else if (target.expectedColor !== null && telemetryData.led_mode !== undefined && telemetryData.led_mode !== null) {
+          if (telemetryData.led_mode !== target.expectedColor) {
+            if (target.retryCount < maxRetries) {
+              console.log(`⚠️  LED mode mismatch for ${deviceId}: got '${telemetryData.led_mode}', expected '${target.expectedColor}'. Resending... (attempt ${target.retryCount + 1})`);
+              incrementRetry(deviceId);
+              sendDownlink(deviceId, target.hexPayload, 1).catch(err => console.error(`❌ Retry downlink error for ${deviceId}:`, err.response?.data || err.message));
+            } else {
+              console.log(`❌ Max retries reached for ${deviceId} (colour). Giving up.`);
+              clearTargetCommand(deviceId);
+            }
+          } else {
+            console.log(`✅ LED mode confirmed '${target.expectedColor}' for ${deviceId}.`);
+            clearTargetCommand(deviceId);
+          }
         }
       }
 
@@ -148,6 +168,8 @@ function parseDecodedPayload(decoded) {
     operating_time_hours: decoded.operating_time_hours ?? decoded.operatingTime ?? null,
     power_factor: decoded.power_factor ?? decoded.powerFactor ?? null,
     fault_status: decoded.fault_status ?? decoded.faultStatus ?? null,
+    led_mode: decoded.led_mode ?? null,          // 'yellow' = warm | 'white' = white
+    relay_state: decoded.relay_state ?? null,
   };
 }
 

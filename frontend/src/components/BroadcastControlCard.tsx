@@ -74,7 +74,7 @@ export function BroadcastControlCard({ devices }: Props) {
         }
 
         if (i < activeDevices.length - 1) {
-          await delay(500);
+          await delay(1000);
         }
       }
 
@@ -143,7 +143,7 @@ export function BroadcastControlCard({ devices }: Props) {
         }
 
         if (i < activeDevices.length - 1) {
-          await delay(500);
+          await delay(1000);
         }
       }
 

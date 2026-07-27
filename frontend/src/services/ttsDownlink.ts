@@ -52,7 +52,7 @@ export async function sendControlCommand(
     };
 
     // Send command twice with 500ms gap
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       const res = await fetch(
         `${ENDPOINTS.nodered.base}/smartlight/control`,
         {
@@ -80,7 +80,7 @@ export async function sendControlCommand(
 
       // Wait 500ms before the second send
       if (i === 0) {
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
@@ -115,7 +115,7 @@ export async function sendColorCommand(
     };
 
     // Send command 4 times with 500ms gap for reliable color switching
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       const res = await fetch(
         `${ENDPOINTS.nodered.base}/smartlight/control`,
         {
@@ -143,7 +143,7 @@ export async function sendColorCommand(
 
       // Wait 500ms before next send (skip after last)
       if (i < 3) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve,100));
       }
     }
 

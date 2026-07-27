@@ -9,15 +9,19 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    port: 3001,
     proxy: {
       // Proxy backend requests to avoid browser CORS block
       '/nr-api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/nr-api/, ''),
       },
     },
   },
+  preview: {
+    port: 3001,
+  }
 })
 
 
