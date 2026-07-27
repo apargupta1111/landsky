@@ -133,7 +133,7 @@ function BulkControl({ devices }: { devices: any[] }) {
           else if (cmd === 'powerOff')  await ttsCommands.powerOff(dev.ttsDeviceId);
           else if (cmd === 'setDimming') await ttsCommands.setDimming(dev.ttsDeviceId, val ?? dimLevel);
         } catch { hasError = true; }
-        if (i < online.length - 1) await delay(2200);
+        if (i < online.length - 1) await delay(3000);
       }
       setStatus(hasError ? 'error' : 'success');
       setMsg(hasError ? 'Some commands failed' : `Done — ${online.length} lights updated`);
@@ -279,7 +279,7 @@ export function WardDetails() {
     const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
     const status: 'online' | 'warning' | 'error' =
       !hasData ? 'error'
-      : faultStatus && faultStatus !== '–' && faultStatus !== '0' ? 'warning'
+      : faultStatus && faultStatus !== '–' && faultStatus !== '0' && faultStatus.toLowerCase() !== 'normal' ? 'warning'
       : 'online';
 
     const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;

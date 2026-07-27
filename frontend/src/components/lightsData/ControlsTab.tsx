@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Power, Settings2, AlertTriangle, Sun, Snowflake, RefreshCw } from 'lucide-react';
 import { useColorState } from '../../hooks/useColorState';
+import type { TelemetryData } from '../../services/backendTelemetry';
+import { tlv } from '../../hooks/useTelemetry';
 
 interface ControlsTabProps {
   deviceId?: string | null;
+  telemetry?: TelemetryData | null;
   ctrl: {
     status: 'idle' | 'sending' | 'success' | 'error';
     setDimmingLevel: (level: number) => Promise<void>;
@@ -15,10 +18,20 @@ interface ControlsTabProps {
   };
 }
 
-export function ControlsTab({ ctrl, deviceId }: ControlsTabProps) {
+export function ControlsTab({ ctrl, deviceId, telemetry }: ControlsTabProps) {
   const [dimLevel,      setDimLevel]      = useState(100);
   const [pendingReset,  setPendingReset]  = useState(false);
   const { colorMode, setColorMode, isLoading: isLoadingColor } = useColorState(deviceId);
+
+  // Sync brightness slider with telemetry data
+  useEffect(() => {
+    const val = tlv(telemetry, 'brightness_percent', '');
+    if (val !== '') {
+      setDimLevel(Number(val));
+    } else {
+      setDimLevel(100);
+    }
+  }, [telemetry]);
 
   const handleReset = async () => {
     if (!pendingReset) { setPendingReset(true); return; }
