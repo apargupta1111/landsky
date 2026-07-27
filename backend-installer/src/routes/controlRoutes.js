@@ -85,14 +85,20 @@ router.post("/control", async (req, res) => {
       setColor(device_id, "white");
     }
 
-    // Persist target brightness for retries
-    let expectedBrightness = null;
-    if (method === "setDimming") expectedBrightness = Math.max(0, Math.min(100, Math.round(value || 0)));
-    else if (method === "powerOn") expectedBrightness = 100;
-    else if (method === "powerOff" || method === "resetDriver") expectedBrightness = 0;
-    
-    if (expectedBrightness !== null) {
-      setTargetCommand(device_id, method, expectedBrightness, hexPayload);
+    // Persist target for retries — brightness commands track brightness,
+    // colour commands track expected led_mode (warm → 'yellow', white → 'white').
+    if (method === "setDimming") {
+      const expectedBrightness = Math.max(0, Math.min(100, Math.round(value || 0)));
+      setTargetCommand(device_id, method, expectedBrightness, hexPayload, null);
+    } else if (method === "powerOn") {
+      setTargetCommand(device_id, method, 100, hexPayload, null);
+    } else if (method === "powerOff" || method === "resetDriver") {
+      setTargetCommand(device_id, method, 0, hexPayload, null);
+    } else if (method === "setWarmLight") {
+      // led_mode reports 'yellow' when warm is active
+      setTargetCommand(device_id, method, null, hexPayload, "yellow");
+    } else if (method === "setWhiteLight") {
+      setTargetCommand(device_id, method, null, hexPayload, "white");
     }
 
     res.json({

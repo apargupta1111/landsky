@@ -6,12 +6,13 @@ function initCommandStore() {
   store = {};
 }
 
-function setTargetCommand(deviceId, method, expectedBrightness, hexPayload) {
+function setTargetCommand(deviceId, method, expectedBrightness, hexPayload, expectedColor = null) {
   const key = deviceId.replace(/-/g, "");
   store[key] = {
     device_id: deviceId,
     method,
     expectedBrightness,
+    expectedColor,   // 'warm' | 'white' | null
     hexPayload,
     ts: Date.now(),
     retryCount: 0

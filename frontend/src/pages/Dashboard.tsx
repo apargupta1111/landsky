@@ -7,7 +7,7 @@ import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
 import { AddLightModal } from '../components/AddLightModal';
 import { BroadcastControlCard } from '../components/BroadcastControlCard';
-import { fetchNodeRedTelemetry, tlv } from '../services/nodeRedTelemetry';
+import { fetchTelemetry, tlv } from '../services/backendTelemetry';
 import { useAppStore } from '../store/useAppStore';
 
 export function Dashboard() {
@@ -40,10 +40,10 @@ export function Dashboard() {
         await Promise.all(
           devices.map(async (dev) => {
             try {
-              const data = await fetchNodeRedTelemetry(dev.ttsDeviceId);
+              const data = await fetchTelemetry(dev.ttsDeviceId);
               results[dev.id] = data;
             } catch (e) {
-              console.error(`Telemetry error for ${dev.id}:`, e);
+              console.warn(`Telemetry error for ${dev.id}:`, e);
             }
           })
         );
