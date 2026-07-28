@@ -44,7 +44,7 @@ export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
 }
 
 // Helper: safely extract the latest value from a telemetry key
-export function tlv(data: TelemetryData | null, key: string, fallback = '–'): string {
+export function tlv(data: TelemetryData | null | undefined, key: string, fallback = '–'): string {
   const arr = data?.[key];
   if (!arr?.length) return fallback;
   const val = arr[0].value;
