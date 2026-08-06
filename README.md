@@ -1,1 +1,4 @@
 "# landsky" 
+DB_NAME=LANDSKY
+DB_USER=landsky
+PASSWORD=APAR123
