@@ -1,11 +1,10 @@
 /**
  * Control Routes — handles streetlight control commands.
  * 
- * Replaces Node-RED endpoint:
- *   POST /smartlight/control
- * 
  * Receives commands from the frontend and sends downlink payloads
  * directly to TTS via the Application Server API.
+ * 
+ * Now also logs every command to light_action_logs in the database.
  */
 
 const express = require("express");
@@ -13,6 +12,7 @@ const router = express.Router();
 const { sendDownlink } = require("../services/ttsApiService");
 const { setColor, getColor, getAllColors } = require("../services/colorStore");
 const { setTargetCommand } = require("../services/commandStore");
+const pool = require("../config/db");
 
 // ── Payload Encoders ───────────────────────────────────────────────────────────
 // TTS downlink payload is a SINGLE BYTE: the brightness value (0–100 decimal).
@@ -32,6 +32,30 @@ const WARM_LIGHT_HEX = "6F"; // warm CCT colour
 const WHITE_LIGHT_HEX = "70"; // white CCT colour
 
 /**
+ * Log an action to light_action_logs (async, fire-and-forget).
+ */
+async function logAction(deviceId, action, dimValue) {
+  try {
+    // Look up the light's DB id by name
+    const lightResult = await pool.query(
+      "SELECT id FROM lights WHERE name = $1",
+      [deviceId]
+    );
+
+    if (lightResult.rows.length === 0) return; // device not in DB
+
+    const lightId = lightResult.rows[0].id;
+
+    await pool.query(
+      "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES ($1, $2, $3)",
+      [lightId, action, dimValue]
+    );
+  } catch (err) {
+    console.error(`⚠️  Failed to log action for ${deviceId}:`, err.message);
+  }
+}
+
+/**
  * POST /smartlight/control
  * Body: { device_id, topic, method, value }
  * 
@@ -47,21 +71,28 @@ router.post("/control", async (req, res) => {
   console.log(`🎮 Control command: ${method} for ${device_id} (value: ${value})`);
 
   let hexPayload;
+  let dimValue = null;
+
   switch (method) {
     case "setDimming":
       hexPayload = encodeBrightness(value || 0);
+      dimValue = Math.max(0, Math.min(100, Math.round(value || 0)));
       break;
     case "setMaxCurrent":
       hexPayload = encodeBrightness(value || 100);
+      dimValue = Math.max(0, Math.min(100, Math.round(value || 100)));
       break;
     case "powerOn":
       hexPayload = POWER_ON_HEX;
+      dimValue = 100;
       break;
     case "powerOff":
       hexPayload = POWER_OFF_HEX;
+      dimValue = 0;
       break;
     case "resetDriver":
       hexPayload = POWER_OFF_HEX; // reset = turn off
+      dimValue = 0;
       break;
     case "setWarmLight":
       hexPayload = WARM_LIGHT_HEX;
@@ -77,6 +108,9 @@ router.post("/control", async (req, res) => {
     // Send the downlink via TTS API
     await sendDownlink(device_id, hexPayload, 1);
     console.log(`✅ Downlink sent: ${device_id} → 0x${hexPayload} (${parseInt(hexPayload, 16)}%)`);
+
+    // Log the action to the database (fire-and-forget)
+    logAction(device_id, method, dimValue);
 
     // Persist color state for warm/white commands
     if (method === "setWarmLight") {

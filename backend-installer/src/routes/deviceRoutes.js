@@ -1,62 +1,100 @@
 /**
- * Device Routes — queries TTS for end device information.
+ * Device Routes — reads device info from the lights DB table.
+ * Replaces direct TTS API queries.
+ * 
+ * Maintains the same response shape as before so the frontend doesn't break.
  */
 
 const express = require("express");
 const router = express.Router();
-const { listDevices, getDevice } = require("../services/ttsApiService");
+const pool = require("../config/db");
 
 /**
  * GET /api/devices
- * Returns all end devices registered in the TTS application.
+ * Returns all lights from the database, formatted like TTS devices were.
  */
 router.get("/", async (req, res) => {
   try {
-    const devices = await listDevices();
-    
-    // Transform TTS device format to frontend-friendly format
-    const formatted = devices.map((dev) => ({
-      id: dev.ids?.device_id || "",
-      name: dev.name || dev.ids?.device_id || "",
-      description: dev.description || "",
-      devEui: dev.ids?.dev_eui || "",
-      joinEui: dev.ids?.join_eui || "",
-      address: dev.attributes?.address || "",
-      lat: parseFloat(dev.locations?.user?.latitude || 0),
-      lng: parseFloat(dev.locations?.user?.longitude || 0),
-      ttsDeviceId: dev.ids?.device_id || "",
-      createdAt: dev.created_at || "",
-      updatedAt: dev.updated_at || "",
+    const result = await pool.query(`
+      SELECT l.*,
+             ls.brightness_percent,
+             ls.led_mode,
+             ls.relay_state
+      FROM lights l
+      LEFT JOIN light_status ls ON ls.light_id = l.id
+      ORDER BY l.id
+    `);
+
+    // Transform DB row format to the frontend-friendly format
+    // (same shape the old TTS-based route returned)
+    const formatted = result.rows.map((row) => ({
+      id: row.name || `light-${row.id}`,
+      name: row.name || `Light ${row.id}`,
+      description: "",
+      devEui: row.serial_number || "",
+      joinEui: "",
+      address: "",
+      lat: parseFloat(row.latitude) || 0,
+      lng: parseFloat(row.longitude) || 0,
+      ttsDeviceId: row.name || `light-${row.id}`,
+      createdAt: row.created_at || "",
+      updatedAt: row.updated_at || "",
+      // Extra DB fields
+      dbId: row.id,
+      serialNumber: row.serial_number,
+      poleNumber: row.pole_number,
+      connectionStatus: row.connection_status,
+      faultStatus: row.fault_status,
+      lastSeenTime: row.last_seen_time,
     }));
 
     res.json(formatted);
   } catch (err) {
-    console.error("❌ Error listing devices:", err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to fetch devices from TTS" });
+    console.error("❌ Error listing devices:", err.message);
+    res.status(500).json({ error: "Failed to fetch devices from database" });
   }
 });
 
 /**
  * GET /api/devices/:deviceId
- * Returns details for a specific device.
+ * Returns details for a specific device by name.
  */
 router.get("/:deviceId", async (req, res) => {
   try {
-    const device = await getDevice(req.params.deviceId);
-    res.json({
-      id: device.ids?.device_id || "",
-      name: device.name || "",
-      description: device.description || "",
-      devEui: device.ids?.dev_eui || "",
-      joinEui: device.ids?.join_eui || "",
-      ttsDeviceId: device.ids?.device_id || "",
-    });
-  } catch (err) {
-    if (err.response?.status === 404) {
+    const result = await pool.query(`
+      SELECT l.*,
+             ls.brightness_percent,
+             ls.led_mode,
+             ls.relay_state
+      FROM lights l
+      LEFT JOIN light_status ls ON ls.light_id = l.id
+      WHERE l.name = $1
+    `, [req.params.deviceId]);
+
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: "Device not found" });
     }
-    console.error("❌ Error getting device:", err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to fetch device from TTS" });
+
+    const row = result.rows[0];
+    res.json({
+      id: row.name || `light-${row.id}`,
+      name: row.name || `Light ${row.id}`,
+      description: "",
+      devEui: row.serial_number || "",
+      joinEui: "",
+      ttsDeviceId: row.name || `light-${row.id}`,
+      dbId: row.id,
+      serialNumber: row.serial_number,
+      poleNumber: row.pole_number,
+      connectionStatus: row.connection_status,
+      faultStatus: row.fault_status,
+      lastSeenTime: row.last_seen_time,
+      lat: parseFloat(row.latitude) || 0,
+      lng: parseFloat(row.longitude) || 0,
+    });
+  } catch (err) {
+    console.error("❌ Error getting device:", err.message);
+    res.status(500).json({ error: "Failed to fetch device from database" });
   }
 });
 

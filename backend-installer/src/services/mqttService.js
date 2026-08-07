@@ -4,14 +4,17 @@
  * TTS publishes uplink messages on:
  *   v3/{app_id}@{tenant_id}/devices/{device_id}/up
  * 
- * We parse the decoded_payload from the uplink and store it in the 
- * telemetry store for the REST API to serve.
+ * We parse the decoded_payload from the uplink and:
+ *   1. Store it in the in-memory telemetry store (fast reads)
+ *   2. UPSERT into light_status table (persistent)
+ *   3. UPDATE lights.last_seen_time, connection_status, fault_status
  */
 
 const mqtt = require("mqtt");
 const { updateTelemetry } = require("./telemetryStore");
 const { getTargetCommand, clearTargetCommand, incrementRetry } = require("./commandStore");
 const { sendDownlink } = require("./ttsApiService");
+const pool = require("../config/db");
 
 let client = null;
 
@@ -40,7 +43,6 @@ function initMqttClient() {
 
     // Subscribe to all device uplinks for our application
     // TTS topic format: v3/{app_id}@{tenant_id}/devices/+/up
-    const appId = process.env.TTS_APP_ID || "hbeon-app-001";
     const topic = `v3/${username}/devices/+/up`;
     
     client.subscribe(topic, { qos: 0 }, (err) => {
@@ -52,7 +54,7 @@ function initMqttClient() {
     });
   });
 
-  client.on("message", (topic, message) => {
+  client.on("message", async (topic, message) => {
     try {
       const payload = JSON.parse(message.toString());
       
@@ -89,7 +91,14 @@ function initMqttClient() {
       telemetryData.f_port = uplinkMsg.f_port;
 
       console.log(`📨 Telemetry [${deviceId}]:`, JSON.stringify(telemetryData).slice(0, 120));
+
+      // 1. Update in-memory store (fast reads)
       updateTelemetry(deviceId, telemetryData);
+
+      // 2. Persist to database (async, don't block MQTT processing)
+      persistTelemetryToDb(deviceId, telemetryData).catch((err) =>
+        console.error(`❌ DB persist error for ${deviceId}:`, err.message)
+      );
 
       // ── Command verification & retry ────────────────────────────────────────
       const target = getTargetCommand(deviceId);
@@ -146,6 +155,86 @@ function initMqttClient() {
   client.on("close", () => {
     console.log("🔌 MQTT connection closed");
   });
+}
+
+// ── Database Persistence ────────────────────────────────────────────────────
+
+/**
+ * Persist telemetry data to the database.
+ * 1. Looks up the light by its TTS device name
+ * 2. UPSERTs into light_status
+ * 3. Updates lights.last_seen_time, connection_status, fault_status
+ */
+async function persistTelemetryToDb(deviceId, data) {
+  // Find the light by name (TTS device_id matches lights.name)
+  const lightResult = await pool.query(
+    "SELECT id FROM lights WHERE name = $1",
+    [deviceId]
+  );
+
+  if (lightResult.rows.length === 0) {
+    // Device not registered in DB — skip persistence
+    return;
+  }
+
+  const lightId = lightResult.rows[0].id;
+
+  // UPSERT light_status
+  await pool.query(`
+    INSERT INTO light_status (
+      light_id, brightness_percent, fault_status,
+      input_current_mA, input_frequency_Hz, input_power_W, input_voltage_V,
+      internal_temp_C, lamp_on_time_hours, led_mode, led_power_W,
+      operating_time_hours, output_current_mA, output_voltage_V,
+      power_factor, relay_state
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    ON CONFLICT (light_id) DO UPDATE SET
+      brightness_percent    = COALESCE(EXCLUDED.brightness_percent, light_status.brightness_percent),
+      fault_status          = COALESCE(EXCLUDED.fault_status, light_status.fault_status),
+      input_current_mA      = COALESCE(EXCLUDED.input_current_mA, light_status.input_current_mA),
+      input_frequency_Hz    = COALESCE(EXCLUDED.input_frequency_Hz, light_status.input_frequency_Hz),
+      input_power_W         = COALESCE(EXCLUDED.input_power_W, light_status.input_power_W),
+      input_voltage_V       = COALESCE(EXCLUDED.input_voltage_V, light_status.input_voltage_V),
+      internal_temp_C       = COALESCE(EXCLUDED.internal_temp_C, light_status.internal_temp_C),
+      lamp_on_time_hours    = COALESCE(EXCLUDED.lamp_on_time_hours, light_status.lamp_on_time_hours),
+      led_mode              = COALESCE(EXCLUDED.led_mode, light_status.led_mode),
+      led_power_W           = COALESCE(EXCLUDED.led_power_W, light_status.led_power_W),
+      operating_time_hours  = COALESCE(EXCLUDED.operating_time_hours, light_status.operating_time_hours),
+      output_current_mA     = COALESCE(EXCLUDED.output_current_mA, light_status.output_current_mA),
+      output_voltage_V      = COALESCE(EXCLUDED.output_voltage_V, light_status.output_voltage_V),
+      power_factor          = COALESCE(EXCLUDED.power_factor, light_status.power_factor),
+      relay_state           = COALESCE(EXCLUDED.relay_state, light_status.relay_state)
+  `, [
+    lightId,
+    data.brightness_percent ?? null,
+    data.fault_status ?? null,
+    data.input_current_mA ?? null,
+    data.input_frequency_Hz ?? null,
+    data.input_power_W ?? null,
+    data.input_voltage_V ?? null,
+    data.internal_temp_C ?? null,
+    data.lamp_on_time_hours ?? null,
+    data.led_mode ?? null,
+    data.led_power_W ?? null,
+    data.operating_time_hours ?? null,
+    data.output_current_mA ?? null,
+    data.output_voltage_V ?? null,
+    data.power_factor ?? null,
+    data.relay_state ?? null,
+  ]);
+
+  // Update lights table
+  const faultVal = data.fault_status;
+  const dbFaultStatus = (faultVal && faultVal !== "0" && faultVal !== "active") ? "fault" : "active";
+
+  await pool.query(`
+    UPDATE lights
+    SET last_seen_time    = CURRENT_TIMESTAMP,
+        connection_status = 'on',
+        fault_status      = $1,
+        updated_at        = CURRENT_TIMESTAMP
+    WHERE id = $2
+  `, [dbFaultStatus, lightId]);
 }
 
 /**

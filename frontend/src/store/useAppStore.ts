@@ -21,10 +21,15 @@ export interface AppState {
 
   isAuthenticated: boolean;
   username: string;
-  login: (user: string, pass: string) => boolean;
+  token: string | null;
+  refreshToken: string | null;
+  login: (user: string, pass: string) => Promise<boolean>;
   logout: () => void;
 
   devices: Device[];
+  isLoadingDevices: boolean;
+  deviceFetchError: string | null;
+  fetchDevices: () => Promise<void>;
   addDevice: (device: Device) => void;
   removeDevice: (id: string) => void;
 
@@ -75,6 +80,10 @@ export const useAppStore = create<AppState>()(
       partialize: (s) => ({
         isDarkMode:       s.isDarkMode,
         telemetryHistory: s.telemetryHistory,
+        isAuthenticated:  s.isAuthenticated,
+        username:         s.username,
+        token:            s.token,
+        refreshToken:     s.refreshToken,
       }),
     },
   ),

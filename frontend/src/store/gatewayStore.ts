@@ -17,8 +17,8 @@ export const createGatewaySlice = (set: any) => ({
       console.log("fetchGateways called");
       console.log("SERVER_IP", SERVER_IP);
   
-console.log("URL:", `${SERVER_IP}/gateways`);
-      const response = await fetch(`${SERVER_IP}/gateways`);
+console.log("URL:", `${SERVER_IP}/api/gateways`);
+      const response = await fetch(`${SERVER_IP}/api/gateways`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP Error Status: ${response.status}`);
       }

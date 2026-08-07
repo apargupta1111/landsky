@@ -1,10 +1,8 @@
 /**
  * TTS API Service — direct HTTP calls to The Things Stack API.
  * 
- * Handles:
- *   - Device queries (list, get)
- *   - Gateway queries  
- *   - Downlink command scheduling
+ * After DB integration, only sendDownlink remains.
+ * Device and gateway queries now come from the database.
  */
 
 const axios = require("axios");
@@ -17,53 +15,6 @@ const headers = {
   Authorization: `Bearer ${TTS_API_KEY}`,
   "Content-Type": "application/json",
 };
-
-// ── Device Operations ──────────────────────────────────────────────────────────
-
-/**
- * List all end devices for the application.
- */
-async function listDevices() {
-  const url = `${TTS_SERVER}/api/v3/applications/${TTS_APP_ID}/devices`;
-  const res = await axios.get(url, {
-    headers,
-    params: {
-      field_mask: "name,description,attributes,locations",
-    },
-  });
-  return res.data.end_devices || [];
-}
-
-/**
- * Get details for a specific device.
- * @param {string} deviceId - e.g. "streetlight-01"
- */
-async function getDevice(deviceId) {
-  const url = `${TTS_SERVER}/api/v3/applications/${TTS_APP_ID}/devices/${deviceId}`;
-  const res = await axios.get(url, {
-    headers,
-    params: {
-      field_mask: "name,description,attributes,locations,version_ids",
-    },
-  });
-  return res.data;
-}
-
-// ── Gateway Operations ─────────────────────────────────────────────────────────
-
-/**
- * List all gateways visible to this API key.
- */
-async function listGateways() {
-  const url = `${TTS_SERVER}/api/v3/gateways`;
-  const res = await axios.get(url, {
-    headers,
-    params: {
-      field_mask: "name,description,gateway_server_address,frequency_plan_ids,status_public,location_public,antennas",
-    },
-  });
-  return res.data.gateways || [];
-}
 
 // ── Downlink Operations ────────────────────────────────────────────────────────
 
@@ -95,8 +46,5 @@ async function sendDownlink(deviceId, hexPayload, fPort = 1) {
 }
 
 module.exports = {
-  listDevices,
-  getDevice,
-  listGateways,
   sendDownlink,
 };
