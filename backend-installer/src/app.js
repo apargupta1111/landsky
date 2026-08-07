@@ -46,7 +46,7 @@ app.use("/gateways", gatewayRoutesDb); // keep /gateways for frontend compatibil
 app.use("/api/gateways", gatewayRoutesDb);
 
 // Lights
-app.use("/api/lights", lightRoutes);
+app.use("/api/lights", lightRoutes);~
 
 // Schedules, Alerts, Action Logs, QR, Light Status
 app.use("/api/schedules", scheduleRoutes);

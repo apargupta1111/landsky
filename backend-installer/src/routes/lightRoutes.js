@@ -8,6 +8,7 @@ const {
   getLightById,
   createLight,
   updateLight,
+  patchLightLocation,
   deleteLight,
 } = require("../controllers/lightController");
 
@@ -17,6 +18,7 @@ router.get("/", getAllLights);
 router.get("/:id", getLightById);
 router.post("/", createLight);
 router.put("/:id", updateLight);
+router.patch("/:id/location", patchLightLocation);
 router.delete("/:id", deleteLight);
 
 module.exports = router;

@@ -158,6 +158,34 @@ const updateLight = async (req, res) => {
   }
 };
 
+// ── PATCH location only ──────────────────────────────────────────────────────
+
+const patchLightLocation = async (req, res) => {
+  const { latitude, longitude } = req.body;
+
+  if (latitude == null || longitude == null) {
+    return res.status(400).json({ error: "latitude and longitude are required" });
+  }
+
+  try {
+    const result = await pool.query(`
+      UPDATE lights
+      SET latitude = $1, longitude = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `, [latitude, longitude, req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Light not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ patchLightLocation error:", err.message);
+    res.status(500).json({ error: "Failed to update light location" });
+  }
+};
+
 // ── DELETE light ─────────────────────────────────────────────────────────────
 
 const deleteLight = async (req, res) => {
@@ -183,5 +211,6 @@ module.exports = {
   getLightById,
   createLight,
   updateLight,
+  patchLightLocation,
   deleteLight,
 };
