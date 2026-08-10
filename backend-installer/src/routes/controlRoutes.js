@@ -47,10 +47,18 @@ async function logAction(deviceId, action, dimValue) {
 
     const lightId = rows[0].id;
 
-    await pool.query(
-      "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES (?, ?, ?)",
-      [lightId, action, dimValue]
-    );
+    const [existing] = await pool.query("SELECT id FROM light_action_logs WHERE light_id = ?", [lightId]);
+    if (existing.length > 0) {
+      await pool.query(
+        "UPDATE light_action_logs SET action = ?, dim_value = ?, created_at = CURRENT_TIMESTAMP WHERE light_id = ?",
+        [action, dimValue, lightId]
+      );
+    } else {
+      await pool.query(
+        "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES (?, ?, ?)",
+        [lightId, action, dimValue]
+      );
+    }
   } catch (err) {
     console.error(`⚠️  Failed to log action for ${deviceId}:`, err.message);
   }

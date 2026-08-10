@@ -17,8 +17,18 @@ router.get("/", async (req, res) => {
     const values = [];
 
     if (light_id) {
-      query += ` AND light = ?`;
-      values.push(light_id);
+      if (isNaN(light_id)) {
+        const [rows] = await pool.query("SELECT id FROM lights WHERE name = ?", [light_id]);
+        if (rows.length > 0) {
+          query += ` AND light = ?`;
+          values.push(rows[0].id);
+        } else {
+          return res.json([]);
+        }
+      } else {
+        query += ` AND light = ?`;
+        values.push(light_id);
+      }
     }
     if (is_active !== undefined) {
       query += ` AND is_active = ?`;
@@ -65,11 +75,18 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    let lightDbId = light;
+    if (isNaN(light)) {
+      const [rows] = await pool.query("SELECT id FROM lights WHERE name = ?", [light]);
+      if (rows.length === 0) return res.status(404).json({ error: "Light not found" });
+      lightDbId = rows[0].id;
+    }
+
     const [result] = await pool.query(`
       INSERT INTO schedules (light, is_periodic, start_time, stop_time, days_of_week, is_active)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      light,
+      lightDbId,
       is_periodic || "daily",
       start_time,
       stop_time,

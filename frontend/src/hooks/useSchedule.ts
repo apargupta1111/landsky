@@ -1,20 +1,36 @@
 import { useState, useEffect } from 'react';
 import type { Schedule } from '../components/lightsData/types';
-
-const KEY = 'landsky_schedules';
-
-function load(): Schedule[] {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); }
-  catch { return []; }
-}
+import { ENDPOINTS } from '../config/endpoints';
 
 export function useSchedule(lightId: string) {
-  const [schedules, setSchedules] = useState<Schedule[]>(load);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
 
-  // Persist on every change
+  const fetchSchedules = async () => {
+    if (!lightId) return;
+    try {
+      const res = await fetch(`${ENDPOINTS.backend.base}/api/schedules?light_id=${lightId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = data.map((s: any) => ({
+          id: s.id.toString(),
+          lightId: s.light.toString(),
+          onTime: s.start_time.substring(0, 5),
+          offTime: s.stop_time.substring(0, 5),
+          repeat: s.is_periodic,
+          days: Array.isArray(s.days_of_week) ? s.days_of_week : (typeof s.days_of_week === 'string' ? JSON.parse(s.days_of_week) : []),
+          isActive: !!s.is_active,
+          createdAt: s.created_at,
+        }));
+        setSchedules(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch schedules', err);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(schedules));
-  }, [schedules]);
+    fetchSchedules();
+  }, [lightId]);
 
   // Form state
   const [onTime,  setOnTime]  = useState('18:00');
@@ -23,31 +39,56 @@ export function useSchedule(lightId: string) {
   const [days,    setDays]    = useState<number[]>([1, 2, 3, 4, 5]);
   const [saved,   setSaved]   = useState(false);
 
-  const lightSchedules = schedules.filter((s) => s.lightId === lightId);
+  const lightSchedules = schedules;
 
-  const add = () => {
-    const s: Schedule = {
-      id: `${lightId}-${Date.now()}`,
-      lightId,
-      onTime,
-      offTime,
-      repeat,
-      days: repeat === 'custom' ? days : [],
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-    setSchedules((prev) => [...prev, s]);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const add = async () => {
+    try {
+      const payload = {
+        light: lightId,
+        is_periodic: repeat,
+        start_time: onTime + ':00',
+        stop_time: offTime + ':00',
+        days_of_week: repeat === 'custom' ? days : [],
+        is_active: true
+      };
+      const res = await fetch(`${ENDPOINTS.backend.base}/api/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+        fetchSchedules();
+      }
+    } catch (err) {
+      console.error('Failed to add schedule', err);
+    }
   };
 
-  const toggle = (id: string) =>
-    setSchedules((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
-    );
+  const toggle = async (id: string) => {
+    const s = schedules.find(x => x.id === id);
+    if (!s) return;
+    try {
+      await fetch(`${ENDPOINTS.backend.base}/api/schedules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !s.isActive })
+      });
+      fetchSchedules();
+    } catch (err) {
+      console.error('Failed to toggle schedule', err);
+    }
+  };
 
-  const remove = (id: string) =>
-    setSchedules((prev) => prev.filter((s) => s.id !== id));
+  const remove = async (id: string) => {
+    try {
+      await fetch(`${ENDPOINTS.backend.base}/api/schedules/${id}`, { method: 'DELETE' });
+      fetchSchedules();
+    } catch (err) {
+      console.error('Failed to remove schedule', err);
+    }
+  };
 
   const toggleDay = (d: number) =>
     setDays((prev) =>
