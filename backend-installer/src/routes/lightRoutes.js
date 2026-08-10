@@ -1,12 +1,24 @@
 /**
- * Light Routes — DB-backed light operations.
+ * Light Routes — Full CRUD for lights table.
  */
 
 const express = require("express");
-const { getAllLights } = require("../controllers/lightController");
+const {
+  getAllLights,
+  getLightById,
+  createLight,
+  updateLight,
+  patchLightLocation,
+  deleteLight,
+} = require("../controllers/lightController");
+
 const router = express.Router();
 
-
 router.get("/", getAllLights);
+router.get("/:id", getLightById);
+router.post("/", createLight);
+router.put("/:id", updateLight);
+router.patch("/:id/location", patchLightLocation);
+router.delete("/:id", deleteLight);
 
 module.exports = router;

@@ -7,13 +7,6 @@ import { useAppStore } from '../store/useAppStore';
 
 export function Login() {
   const login = useAppStore((s) => s.login);
-  useEffect(() => {
-  if (import.meta.env.VITE_BYPASS_AUTH)
-   {
-    login('a', 'a');
-  }
-}, [login]);
-  
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -26,11 +19,11 @@ export function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
   
+    // Optional artificial delay for animation
     await new Promise((r) => setTimeout(r, 600));
 
-    const ok = login(username.trim(), password);
+    const ok = await login(username.trim(), password);
     setLoading(false);
 
     if (!ok) {
@@ -39,7 +32,6 @@ export function Login() {
       setTimeout(() => setShake(false), 600);
     }
   };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[var(--bg-color)]">

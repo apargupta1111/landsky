@@ -14,10 +14,21 @@ import { Login } from './pages/Login';
 import { useTheme } from './hooks/useTheme';
 import { useAppStore } from './store/useAppStore';
 
+import { useEffect } from 'react';
+
 function App() {
   useTheme();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const currentPage     = useAppStore((s) => s.currentPage);
+  const fetchDevices    = useAppStore((s) => s.fetchDevices);
+  const fetchGateways   = useAppStore((s) => s.fetchGateways);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDevices();
+      fetchGateways();
+    }
+  }, [isAuthenticated, fetchDevices, fetchGateways]);
 
   if (!isAuthenticated) return <Login />
 

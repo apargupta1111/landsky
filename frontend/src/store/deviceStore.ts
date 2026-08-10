@@ -1,60 +1,34 @@
 import type { Device } from './types';
 
-const SEED_DEVICES: Device[] = [
-  {
-    id: 'streetlight-01',
-    name: 'Streetlight Node 01',
-    address: 'Mallital Road, near Bhimtal Lake, Nainital, Uttarakhand 263136',
-    lat: 29.3520,
-    lng: 79.5680,
-    ttsDeviceId: 'streetlight-01',
-    addedAt: new Date().toISOString(),
-    wardId: 'ward-1',
-  },
-  {
-    id: 'streetlight-02',
-    name: 'Streetlight Node 02',
-    address: 'Mallital Bazaar Road, Bhimtal, Uttarakhand 263136',
-    lat: 29.3530,
-    lng: 79.5690,
-    ttsDeviceId: 'streetlight-02',
-    addedAt: new Date().toISOString(),
-    wardId: 'ward-1',
-  },
-  {
-    id: 'streetlight-03',
-    name: 'Streetlight Node 03',
-    address: 'Mallital Heights, Bhimtal, Uttarakhand 263136',
-    lat: 29.3540,
-    lng: 79.5700,
-    ttsDeviceId: 'streetlight-03',
-    addedAt: new Date().toISOString(),
-    wardId: 'ward-1',
-  },
-  {
-    id: 'streetlight-04',
-    name: 'Streetlight Node 04',
-    address: 'Dak Bangla Road, near Lake View Point, Bhimtal, Uttarakhand 263136',
-    lat: 29.3480,
-    lng: 79.5710,
-    ttsDeviceId: 'streetlight-04',
-    addedAt: new Date().toISOString(),
-    wardId: 'ward-2',
-  },
-  {
-    id: 'streetlight-05',
-    name: 'Streetlight Node 05',
-    address: 'Dak Bangla Forest Rest House Rd, Bhimtal, Uttarakhand 263136',
-    lat: 29.3470,
-    lng: 79.5725,
-    ttsDeviceId: 'streetlight-05',
-    addedAt: new Date().toISOString(),
-    wardId: 'ward-2',
-  },
-];
+// Get Server IP from environment variable
+const SERVER_IP = import.meta.env.VITE_SERVER_IP;
 
 export const createDeviceSlice = (set: any, get: any) => ({
-  devices: SEED_DEVICES as Device[],
+  devices: [] as Device[],
+  isLoadingDevices: false,
+  deviceFetchError: null as string | null,
+
+  fetchDevices: async () => {
+    set({ isLoadingDevices: true, deviceFetchError: null });
+    try {
+      const response = await fetch(`${SERVER_IP}/api/devices`);
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP Error Status: ${response.status}`);
+      }
+
+      const items = await response.json();
+      if (!Array.isArray(items)) throw new Error('Unexpected API payload shape for devices');
+
+      // The backend returns formatted devices matching the Device interface
+      set({ devices: items, isLoadingDevices: false });
+    } catch (error: any) {
+      set({
+        deviceFetchError: error.message || 'error retrieving devices',
+        isLoadingDevices: false
+      });
+    }
+  },
+
   addDevice: (device: Device) => {
     const existing = get().devices.find((d: Device) => d.id === device.id);
     if (!existing) set((s: any) => ({ devices: [...s.devices, device] }));

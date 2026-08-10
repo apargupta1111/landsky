@@ -7,6 +7,14 @@ export interface Device {
   ttsDeviceId: string;
   addedAt: string;
   wardId?: string;
+  
+  // Database fields
+  dbId?: number;
+  serialNumber?: string;
+  poleNumber?: string;
+  connectionStatus?: string;
+  faultStatus?: string;
+  lastSeenTime?: string;
 }
 
 export interface District {
