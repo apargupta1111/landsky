@@ -18,14 +18,14 @@ router.get("/", async (req, res) => {
     const values = [];
 
     if (light_id) {
-      query += " WHERE light_id = $1";
+      query += " WHERE light_id = ?";
       values.push(light_id);
     }
 
     query += " ORDER BY created_at DESC";
 
-    const result = await pool.query(query, values);
-    res.json(result.rows);
+    const [rows] = await pool.query(query, values);
+    res.json(rows);
   } catch (err) {
     console.error("❌ List QR codes error:", err.message);
     res.status(500).json({ error: "Failed to list QR codes" });
@@ -36,13 +36,13 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM qr WHERE id = $1", [req.params.id]);
+    const [rows] = await pool.query("SELECT * FROM qr WHERE id = ?", [req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "QR code not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get QR code error:", err.message);
     res.status(500).json({ error: "Failed to get QR code" });
@@ -62,13 +62,13 @@ router.post("/", async (req, res) => {
     // Generate a unique QR code string
     const qrCode = `LANDSKY-${light_id}-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
 
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       INSERT INTO qr (light_id, qr_code)
-      VALUES ($1, $2)
-      RETURNING *
+      VALUES (?, ?)
     `, [light_id, qrCode]);
 
-    res.status(201).json(result.rows[0]);
+    const [newQr] = await pool.query("SELECT * FROM qr WHERE id = ?", [result.insertId]);
+    res.status(201).json(newQr[0]);
   } catch (err) {
     console.error("❌ Create QR code error:", err.message);
     res.status(500).json({ error: "Failed to create QR code" });
@@ -79,17 +79,17 @@ router.post("/", async (req, res) => {
 
 router.put("/:id/use", async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       UPDATE qr SET used_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND used_at IS NULL
-      RETURNING *
+      WHERE id = ? AND used_at IS NULL
     `, [req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "QR code not found or already used" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedQr] = await pool.query("SELECT * FROM qr WHERE id = ?", [req.params.id]);
+    res.json(updatedQr[0]);
   } catch (err) {
     console.error("❌ Use QR code error:", err.message);
     res.status(500).json({ error: "Failed to mark QR code as used" });
@@ -100,16 +100,17 @@ router.put("/:id/use", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM qr WHERE id = $1 RETURNING id, qr_code",
+    const [rows] = await pool.query(
+      "SELECT id, qr_code FROM qr WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "QR code not found" });
     }
 
-    res.json({ ok: true, deleted: result.rows[0] });
+    await pool.query("DELETE FROM qr WHERE id = ?", [req.params.id]);
+    res.json({ ok: true, deleted: rows[0] });
   } catch (err) {
     console.error("❌ Delete QR code error:", err.message);
     res.status(500).json({ error: "Failed to delete QR code" });
@@ -150,14 +151,14 @@ router.get("/scan/:qr_code", async (req, res) => {
         l.updated_at  AS light_updated_at
       FROM qr q
       JOIN lights l ON l.id = q.light_id
-      WHERE q.qr_code = $1
+      WHERE q.qr_code = ?
     `, [qr_code]);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "QR code not found or not linked to any light" });
     }
 
-    const row = result.rows[0];
+    const row = rows[0];
 
     res.json({
       qr: {
@@ -218,22 +219,22 @@ router.post("/scan", async (req, res) => {
     return res.status(400).json({ error: "installer_id is required" });
   }
 
-  const client = await pool.connect();
+  const connection = await pool.getConnection();
   try {
-    await client.query("BEGIN");
+    await connection.beginTransaction();
 
     // 1. Find the QR record
-    const qrResult = await client.query(
-      "SELECT id, light_id, qr_code, used_at FROM qr WHERE qr_code = $1",
+    const [qrRows] = await connection.query(
+      "SELECT id, light_id, qr_code, used_at FROM qr WHERE qr_code = ?",
       [qr_code]
     );
 
-    if (qrResult.rows.length === 0) {
-      await client.query("ROLLBACK");
+    if (qrRows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "QR code not found" });
     }
 
-    const qrRow = qrResult.rows[0];
+    const qrRow = qrRows[0];
 
     if (qrRow.used_at) {
       // QR already used — still allow update but warn the caller
@@ -242,59 +243,56 @@ router.post("/scan", async (req, res) => {
 
     // 2. Update the linked light with installer info + GPS
     const updateFields = [
-      "latitude = $1",
-      "longitude = $2",
-      "installer = $3",
+      "latitude = ?",
+      "longitude = ?",
+      "installer = ?",
       "updated_at = CURRENT_TIMESTAMP",
     ];
     const updateValues = [latitude, longitude, installer_id];
-    let paramIdx = 4;
 
     if (pole_number) {
-      updateFields.push(`pole_number = $${paramIdx}`);
+      updateFields.push(`pole_number = ?`);
       updateValues.push(pole_number);
-      paramIdx++;
     }
     if (name) {
-      updateFields.push(`name = $${paramIdx}`);
+      updateFields.push(`name = ?`);
       updateValues.push(name);
-      paramIdx++;
     }
 
     updateValues.push(qrRow.light_id);
 
-    const lightResult = await client.query(`
+    const [lightResult] = await connection.query(`
       UPDATE lights
       SET ${updateFields.join(", ")}
-      WHERE id = $${paramIdx}
-      RETURNING *
+      WHERE id = ?
     `, updateValues);
 
-    if (lightResult.rows.length === 0) {
-      await client.query("ROLLBACK");
+    if (lightResult.affectedRows === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "Linked light not found in database" });
     }
 
     // 3. Mark QR as used
-    await client.query(
-      "UPDATE qr SET used_at = CURRENT_TIMESTAMP WHERE id = $1",
+    await connection.query(
+      "UPDATE qr SET used_at = CURRENT_TIMESTAMP WHERE id = ?",
       [qrRow.id]
     );
 
-    await client.query("COMMIT");
+    await connection.commit();
 
+    const [lightRows] = await connection.query("SELECT * FROM lights WHERE id = ?", [qrRow.light_id]);
     res.json({
       ok: true,
       message: qrRow.used_at ? "Light updated (QR was previously scanned)" : "Light installed successfully",
-      light: lightResult.rows[0],
+      light: lightRows[0],
       qr: { id: qrRow.id, qr_code: qrRow.qr_code },
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await connection.rollback();
     console.error("❌ QR scan install error:", err.message);
     res.status(500).json({ error: "Failed to process QR scan" });
   } finally {
-    client.release();
+    connection.release();
   }
 });
 

@@ -15,21 +15,20 @@ router.get("/", async (req, res) => {
 
     let query = "SELECT * FROM schedules WHERE deleted_at IS NULL";
     const values = [];
-    let idx = 1;
 
     if (light_id) {
-      query += ` AND light = $${idx++}`;
+      query += ` AND light = ?`;
       values.push(light_id);
     }
     if (is_active !== undefined) {
-      query += ` AND is_active = $${idx++}`;
+      query += ` AND is_active = ?`;
       values.push(is_active === "true");
     }
 
     query += " ORDER BY id";
 
-    const result = await pool.query(query, values);
-    res.json(result.rows);
+    const [rows] = await pool.query(query, values);
+    res.json(rows);
   } catch (err) {
     console.error("❌ List schedules error:", err.message);
     res.status(500).json({ error: "Failed to list schedules" });
@@ -40,16 +39,16 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM schedules WHERE id = $1 AND deleted_at IS NULL",
+    const [rows] = await pool.query(
+      "SELECT * FROM schedules WHERE id = ? AND deleted_at IS NULL",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get schedule error:", err.message);
     res.status(500).json({ error: "Failed to get schedule" });
@@ -66,10 +65,9 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       INSERT INTO schedules (light, is_periodic, start_time, stop_time, days_of_week, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
+      VALUES (?, ?, ?, ?, ?, ?)
     `, [
       light,
       is_periodic || "daily",
@@ -79,7 +77,8 @@ router.post("/", async (req, res) => {
       is_active !== undefined ? is_active : true,
     ]);
 
-    res.status(201).json(result.rows[0]);
+    const [newSchedule] = await pool.query("SELECT * FROM schedules WHERE id = ?", [result.insertId]);
+    res.status(201).json(newSchedule[0]);
   } catch (err) {
     console.error("❌ Create schedule error:", err.message);
     res.status(500).json({ error: "Failed to create schedule" });
@@ -94,13 +93,12 @@ router.put("/:id", async (req, res) => {
   try {
     const fields = [];
     const values = [];
-    let idx = 1;
 
-    if (is_periodic !== undefined) { fields.push(`is_periodic = $${idx++}`); values.push(is_periodic); }
-    if (start_time !== undefined) { fields.push(`start_time = $${idx++}`); values.push(start_time); }
-    if (stop_time !== undefined) { fields.push(`stop_time = $${idx++}`); values.push(stop_time); }
-    if (days_of_week !== undefined) { fields.push(`days_of_week = $${idx++}`); values.push(JSON.stringify(days_of_week)); }
-    if (is_active !== undefined) { fields.push(`is_active = $${idx++}`); values.push(is_active); }
+    if (is_periodic !== undefined) { fields.push(`is_periodic = ?`); values.push(is_periodic); }
+    if (start_time !== undefined) { fields.push(`start_time = ?`); values.push(start_time); }
+    if (stop_time !== undefined) { fields.push(`stop_time = ?`); values.push(stop_time); }
+    if (days_of_week !== undefined) { fields.push(`days_of_week = ?`); values.push(JSON.stringify(days_of_week)); }
+    if (is_active !== undefined) { fields.push(`is_active = ?`); values.push(is_active); }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
@@ -109,16 +107,17 @@ router.put("/:id", async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(req.params.id);
 
-    const result = await pool.query(
-      `UPDATE schedules SET ${fields.join(", ")} WHERE id = $${idx} AND deleted_at IS NULL RETURNING *`,
+    const [result] = await pool.query(
+      `UPDATE schedules SET ${fields.join(", ")} WHERE id = ? AND deleted_at IS NULL`,
       values
     );
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedSchedule] = await pool.query("SELECT * FROM schedules WHERE id = ?", [req.params.id]);
+    res.json(updatedSchedule[0]);
   } catch (err) {
     console.error("❌ Update schedule error:", err.message);
     res.status(500).json({ error: "Failed to update schedule" });
@@ -129,16 +128,16 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "UPDATE schedules SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id",
+    const [result] = await pool.query(
+      "UPDATE schedules SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
 
-    res.json({ ok: true, deleted_id: result.rows[0].id });
+    res.json({ ok: true, deleted_id: req.params.id });
   } catch (err) {
     console.error("❌ Delete schedule error:", err.message);
     res.status(500).json({ error: "Failed to delete schedule" });

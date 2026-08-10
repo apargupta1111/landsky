@@ -17,10 +17,10 @@ router.use(authenticate);
 
 router.get("/", authorize("superadmin"), async (req, res) => {
   try {
-    const result = await pool.query(
+    const [rows] = await pool.query(
       "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users ORDER BY id"
     );
-    res.json(result.rows);
+    res.json(rows);
   } catch (err) {
     console.error("❌ List users error:", err.message);
     res.status(500).json({ error: "Failed to list users" });
@@ -31,16 +31,16 @@ router.get("/", authorize("superadmin"), async (req, res) => {
 
 router.get("/:id", authorize("superadmin"), async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = $1",
+    const [rows] = await pool.query(
+      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get user error:", err.message);
     res.status(500).json({ error: "Failed to get user" });
@@ -63,19 +63,18 @@ router.put("/:id", async (req, res) => {
     // Build dynamic update
     const fields = [];
     const values = [];
-    let idx = 1;
 
-    if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email); }
-    if (phone !== undefined) { fields.push(`phone = $${idx++}`); values.push(phone); }
-    if (username !== undefined) { fields.push(`username = $${idx++}`); values.push(username); }
-    if (first_name !== undefined) { fields.push(`first_name = $${idx++}`); values.push(first_name); }
-    if (last_name !== undefined) { fields.push(`last_name = $${idx++}`); values.push(last_name); }
+    if (email !== undefined) { fields.push(`email = ?`); values.push(email); }
+    if (phone !== undefined) { fields.push(`phone = ?`); values.push(phone); }
+    if (username !== undefined) { fields.push(`username = ?`); values.push(username); }
+    if (first_name !== undefined) { fields.push(`first_name = ?`); values.push(first_name); }
+    if (last_name !== undefined) { fields.push(`last_name = ?`); values.push(last_name); }
     if (role !== undefined && req.user.role === "superadmin") {
-      fields.push(`role = $${idx++}`); values.push(role);
+      fields.push(`role = ?`); values.push(role);
     }
     if (password) {
       const hashed = await bcrypt.hash(password, SALT_ROUNDS);
-      fields.push(`password = $${idx++}`); values.push(hashed);
+      fields.push(`password = ?`); values.push(hashed);
     }
 
     if (fields.length === 0) {
@@ -85,17 +84,17 @@ router.put("/:id", async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(targetId);
 
-    const result = await pool.query(
-      `UPDATE users SET ${fields.join(", ")} WHERE id = $${idx}
-       RETURNING id, email, phone, username, first_name, last_name, role, created_at, updated_at`,
+    const [result] = await pool.query(
+      `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
       values
     );
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedUser] = await pool.query("SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = ?", [targetId]);
+    res.json(updatedUser[0]);
   } catch (err) {
     console.error("❌ Update user error:", err.message);
     res.status(500).json({ error: "Failed to update user" });
@@ -106,16 +105,17 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", authorize("superadmin"), async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING id, email",
+    const [rows] = await pool.query(
+      "SELECT id, email FROM users WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json({ ok: true, deleted: result.rows[0] });
+    await pool.query("DELETE FROM users WHERE id = ?", [req.params.id]);
+    res.json({ ok: true, deleted: rows[0] });
   } catch (err) {
     console.error("❌ Delete user error:", err.message);
     res.status(500).json({ error: "Failed to delete user" });

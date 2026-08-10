@@ -1,5 +1,6 @@
 /**
  * Auth Routes — register, login, refresh, logout, me
+ * Converted for MySQL (using mysql2/promise)
  */
 
 const express = require("express");
@@ -41,22 +42,28 @@ router.post("/register", async (req, res) => {
 
   try {
     // Check if user already exists
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
-    if (existing.rows.length > 0) {
+    const [existing] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (existing.length > 0) {
       return res.status(409).json({ error: "Email already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const userRole = role || "user";
 
-    const result = await pool.query(
+    // Insert new user
+    const [insertResult] = await pool.query(
       `INSERT INTO users (email, password, username, first_name, last_name, phone, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, email, username, first_name, last_name, role, created_at`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [email, hashedPassword, username || null, first_name || null, last_name || null, phone || null, userRole]
     );
 
-    const user = result.rows[0];
+    // Fetch the newly created user (since MySQL doesn't support RETURNING)
+    const [newUserRows] = await pool.query(
+      "SELECT id, email, username, first_name, last_name, role, created_at FROM users WHERE id = ?",
+      [insertResult.insertId]
+    );
+    const user = newUserRows[0];
+
     const accessToken = generateAccessToken(user);
 
     // Create refresh token
@@ -65,7 +72,7 @@ router.post("/register", async (req, res) => {
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
     await pool.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
       [user.id, refreshHash, expiresAt]
     );
 
@@ -92,16 +99,17 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "SELECT id, email, password, username, first_name, last_name, role FROM users WHERE email = $1 OR username = $1",
-      [identifier]
+    // Note: Passed `identifier` twice because of the two `?` placeholders
+    const [rows] = await pool.query(
+      "SELECT id, email, password, username, first_name, last_name, role FROM users WHERE email = ? OR username = ?",
+      [identifier, identifier]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
@@ -116,7 +124,7 @@ router.post("/login", async (req, res) => {
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
     await pool.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
       [user.id, refreshHash, expiresAt]
     );
 
@@ -146,20 +154,20 @@ router.post("/refresh", async (req, res) => {
   try {
     const tokenHash = crypto.createHash("sha256").update(refresh_token).digest("hex");
 
-    const result = await pool.query(
+    const [rows] = await pool.query(
       `SELECT rt.id, rt.user_id, rt.expires_at, rt.revoked_at,
               u.email, u.role, u.username, u.first_name, u.last_name
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
-       WHERE rt.token_hash = $1 AND rt.deleted_at IS NULL`,
+       WHERE rt.token_hash = ? AND rt.deleted_at IS NULL`,
       [tokenHash]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(401).json({ error: "Invalid refresh token" });
     }
 
-    const row = result.rows[0];
+    const row = rows[0];
 
     if (row.revoked_at) {
       return res.status(401).json({ error: "Refresh token has been revoked" });
@@ -170,7 +178,7 @@ router.post("/refresh", async (req, res) => {
 
     // Revoke the old refresh token (rotate)
     await pool.query(
-      "UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE id = $1",
+      "UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?",
       [row.id]
     );
 
@@ -183,7 +191,7 @@ router.post("/refresh", async (req, res) => {
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
     await pool.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
       [row.user_id, newRefreshHash, expiresAt]
     );
 
@@ -210,7 +218,7 @@ router.post("/logout", async (req, res) => {
     const tokenHash = crypto.createHash("sha256").update(refresh_token).digest("hex");
 
     await pool.query(
-      "UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = $1 AND revoked_at IS NULL",
+      "UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = ? AND revoked_at IS NULL",
       [tokenHash]
     );
 
@@ -225,16 +233,16 @@ router.post("/logout", async (req, res) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = $1",
+    const [rows] = await pool.query(
+      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = ?",
       [req.user.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get profile error:", err.message);
     res.status(500).json({ error: "Failed to get profile" });

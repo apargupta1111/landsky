@@ -23,15 +23,28 @@ export function ControlsTab({ ctrl, deviceId, telemetry }: ControlsTabProps) {
   const [pendingReset,  setPendingReset]  = useState(false);
   const { colorMode, setColorMode, isLoading: isLoadingColor } = useColorState(deviceId);
 
+  const [isApplyingDim, setIsApplyingDim] = useState(false);
+
   // Sync brightness slider with telemetry data
   useEffect(() => {
+    if (isApplyingDim) return;
     const val = tlv(telemetry, 'brightness_percent', '');
     if (val !== '') {
       setDimLevel(Number(val));
     } else {
       setDimLevel(100);
     }
-  }, [telemetry]);
+  }, [telemetry, isApplyingDim]);
+
+  const handleApplyDimming = async () => {
+    setIsApplyingDim(true);
+    try {
+      await ctrl.setDimmingLevel(dimLevel);
+    } finally {
+      // Ignore telemetry overrides for 10 seconds while the device updates
+      setTimeout(() => setIsApplyingDim(false), 10000);
+    }
+  };
 
   const handleReset = async () => {
     if (!pendingReset) { setPendingReset(true); return; }
@@ -74,7 +87,7 @@ export function ControlsTab({ ctrl, deviceId, telemetry }: ControlsTabProps) {
           <div className="flex justify-between mt-2">
             <div className="text-xs text-[var(--text-secondary)]">{dimLevel}% brightness</div>
             <button
-              onClick={() => ctrl.setDimmingLevel(dimLevel)}
+              onClick={handleApplyDimming}
               disabled={disabled}
               className="px-3 py-1 text-xs bg-primary/20 text-primary border border-primary/50 rounded-lg hover:bg-primary/30 disabled:opacity-40 transition-colors"
             >

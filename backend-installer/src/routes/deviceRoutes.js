@@ -3,6 +3,7 @@
  * Replaces direct TTS API queries.
  * 
  * Maintains the same response shape as before so the frontend doesn't break.
+ * Converted for MySQL (using mysql2/promise).
  */
 
 const express = require("express");
@@ -15,7 +16,7 @@ const pool = require("../config/db");
  */
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT l.*,
              ls.brightness_percent,
              ls.led_mode,
@@ -27,7 +28,7 @@ router.get("/", async (req, res) => {
 
     // Transform DB row format to the frontend-friendly format
     // (same shape the old TTS-based route returned)
-    const formatted = result.rows.map((row) => ({
+    const formatted = rows.map((row) => ({
       id: row.name || `light-${row.id}`,
       name: row.name || `Light ${row.id}`,
       description: "",
@@ -61,21 +62,21 @@ router.get("/", async (req, res) => {
  */
 router.get("/:deviceId", async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT l.*,
              ls.brightness_percent,
              ls.led_mode,
              ls.relay_state
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
-      WHERE l.name = $1
+      WHERE l.name = ?
     `, [req.params.deviceId]);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Device not found" });
     }
 
-    const row = result.rows[0];
+    const row = rows[0];
     res.json({
       id: row.name || `light-${row.id}`,
       name: row.name || `Light ${row.id}`,

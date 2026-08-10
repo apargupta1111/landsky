@@ -1,5 +1,6 @@
 /**
  * Alert Routes — CRUD for alerts table.
+ * Converted for MySQL (using mysql2/promise)
  */
 
 const express = require("express");
@@ -15,30 +16,29 @@ router.get("/", async (req, res) => {
 
     let query = "SELECT * FROM alerts WHERE 1=1";
     const values = [];
-    let idx = 1;
 
     if (status) {
-      query += ` AND status = $${idx++}`;
+      query += ` AND status = ?`;
       values.push(status);
     }
     if (light_id) {
-      query += ` AND light_id = $${idx++}`;
+      query += ` AND light_id = ?`;
       values.push(light_id);
     }
     if (severity) {
-      query += ` AND severity = $${idx++}`;
+      query += ` AND severity = ?`;
       values.push(severity);
     }
 
     query += " ORDER BY created_at DESC";
 
     if (limit) {
-      query += ` LIMIT $${idx++}`;
+      query += ` LIMIT ?`;
       values.push(parseInt(limit, 10));
     }
 
-    const result = await pool.query(query, values);
-    res.json(result.rows);
+    const [rows] = await pool.query(query, values);
+    res.json(rows);
   } catch (err) {
     console.error("❌ List alerts error:", err.message);
     res.status(500).json({ error: "Failed to list alerts" });
@@ -49,13 +49,13 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM alerts WHERE id = $1", [req.params.id]);
+    const [rows] = await pool.query("SELECT * FROM alerts WHERE id = ?", [req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Alert not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get alert error:", err.message);
     res.status(500).json({ error: "Failed to get alert" });
@@ -76,13 +76,15 @@ router.post("/", async (req, res) => {
     const ackBy = acknowledged_by || (req.user && req.user.id) || 1;
     const resBy = resolved_by || (req.user && req.user.id) || 1;
 
-    const result = await pool.query(`
+    // MySQL doesn't have RETURNING *, so we insert, get the ID, and select it
+    const [result] = await pool.query(`
       INSERT INTO alerts (light_id, alert_type, severity, message, acknowledged_by, resolved_by)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
+      VALUES (?, ?, ?, ?, ?, ?)
     `, [light_id, alert_type, severity, message, ackBy, resBy]);
 
-    res.status(201).json(result.rows[0]);
+    const [newAlert] = await pool.query("SELECT * FROM alerts WHERE id = ?", [result.insertId]);
+
+    res.status(201).json(newAlert[0]);
   } catch (err) {
     console.error("❌ Create alert error:", err.message);
     res.status(500).json({ error: "Failed to create alert" });
@@ -95,20 +97,21 @@ router.put("/:id/acknowledge", async (req, res) => {
   try {
     const userId = (req.user && req.user.id) || req.body.user_id || 1;
 
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       UPDATE alerts
       SET status = 'acknowledged',
-          acknowledged_by = $1,
+          acknowledged_by = ?,
           acknowledged_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      RETURNING *
+      WHERE id = ?
     `, [userId, req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Alert not found" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedAlert] = await pool.query("SELECT * FROM alerts WHERE id = ?", [req.params.id]);
+
+    res.json(updatedAlert[0]);
   } catch (err) {
     console.error("❌ Acknowledge alert error:", err.message);
     res.status(500).json({ error: "Failed to acknowledge alert" });
@@ -121,20 +124,21 @@ router.put("/:id/resolve", async (req, res) => {
   try {
     const userId = (req.user && req.user.id) || req.body.user_id || 1;
 
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       UPDATE alerts
       SET status = 'resolved',
-          resolved_by = $1,
+          resolved_by = ?,
           resolved_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      RETURNING *
+      WHERE id = ?
     `, [userId, req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Alert not found" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedAlert] = await pool.query("SELECT * FROM alerts WHERE id = ?", [req.params.id]);
+
+    res.json(updatedAlert[0]);
   } catch (err) {
     console.error("❌ Resolve alert error:", err.message);
     res.status(500).json({ error: "Failed to resolve alert" });
@@ -145,16 +149,14 @@ router.put("/:id/resolve", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM alerts WHERE id = $1 RETURNING id",
-      [req.params.id]
-    );
+    const [result] = await pool.query("DELETE FROM alerts WHERE id = ?", [req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Alert not found" });
     }
 
-    res.json({ ok: true, deleted_id: result.rows[0].id });
+    // Since we successfully deleted it, we can just return the ID from the request params
+    res.json({ ok: true, deleted_id: req.params.id });
   } catch (err) {
     console.error("❌ Delete alert error:", err.message);
     res.status(500).json({ error: "Failed to delete alert" });

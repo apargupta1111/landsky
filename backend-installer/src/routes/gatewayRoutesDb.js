@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT g.*,
              u.username AS installed_by_name
       FROM gateways g
@@ -21,7 +21,7 @@ router.get("/", async (req, res) => {
     `);
 
     // Format for frontend compatibility
-    const formatted = result.rows.map((gw) => ({
+    const formatted = rows.map((gw) => ({
       id: String(gw.id),
       eui: gw.eui,
       tenantId: 0,
@@ -55,16 +55,16 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM gateways WHERE id = $1",
+    const [rows] = await pool.query(
+      "SELECT * FROM gateways WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Gateway not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ Get gateway error:", err.message);
     res.status(500).json({ error: "Failed to get gateway" });
@@ -81,10 +81,9 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       INSERT INTO gateways (eui, name, description, region, latitude, longitude, installed_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
       eui,
       name,
@@ -95,9 +94,10 @@ router.post("/", async (req, res) => {
       installed_by || null,
     ]);
 
-    res.status(201).json(result.rows[0]);
+    const [newGw] = await pool.query("SELECT * FROM gateways WHERE id = ?", [result.insertId]);
+    res.status(201).json(newGw[0]);
   } catch (err) {
-    if (err.code === "23505") {
+    if (err.code === "ER_DUP_ENTRY" || err.errno === 1062) {
       return res.status(409).json({ error: "Gateway EUI already exists" });
     }
     console.error("❌ Create gateway error:", err.message);
@@ -113,16 +113,15 @@ router.put("/:id", async (req, res) => {
   try {
     const fields = [];
     const values = [];
-    let idx = 1;
 
-    if (eui !== undefined) { fields.push(`eui = $${idx++}`); values.push(eui); }
-    if (name !== undefined) { fields.push(`name = $${idx++}`); values.push(name); }
-    if (description !== undefined) { fields.push(`description = $${idx++}`); values.push(description); }
-    if (region !== undefined) { fields.push(`region = $${idx++}`); values.push(region); }
-    if (connection_status !== undefined) { fields.push(`connection_status = $${idx++}`); values.push(connection_status); }
-    if (latitude !== undefined) { fields.push(`latitude = $${idx++}`); values.push(latitude); }
-    if (longitude !== undefined) { fields.push(`longitude = $${idx++}`); values.push(longitude); }
-    if (last_seen !== undefined) { fields.push(`last_seen = $${idx++}`); values.push(last_seen); }
+    if (eui !== undefined) { fields.push(`eui = ?`); values.push(eui); }
+    if (name !== undefined) { fields.push(`name = ?`); values.push(name); }
+    if (description !== undefined) { fields.push(`description = ?`); values.push(description); }
+    if (region !== undefined) { fields.push(`region = ?`); values.push(region); }
+    if (connection_status !== undefined) { fields.push(`connection_status = ?`); values.push(connection_status); }
+    if (latitude !== undefined) { fields.push(`latitude = ?`); values.push(latitude); }
+    if (longitude !== undefined) { fields.push(`longitude = ?`); values.push(longitude); }
+    if (last_seen !== undefined) { fields.push(`last_seen = ?`); values.push(last_seen); }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
@@ -131,16 +130,17 @@ router.put("/:id", async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(req.params.id);
 
-    const result = await pool.query(
-      `UPDATE gateways SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
+    const [result] = await pool.query(
+      `UPDATE gateways SET ${fields.join(", ")} WHERE id = ?`,
       values
     );
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Gateway not found" });
     }
 
-    res.json(result.rows[0]);
+    const [updatedGw] = await pool.query("SELECT * FROM gateways WHERE id = ?", [req.params.id]);
+    res.json(updatedGw[0]);
   } catch (err) {
     console.error("❌ Update gateway error:", err.message);
     res.status(500).json({ error: "Failed to update gateway" });
@@ -151,16 +151,17 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM gateways WHERE id = $1 RETURNING id, eui, name",
+    const [rows] = await pool.query(
+      "SELECT id, eui, name FROM gateways WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Gateway not found" });
     }
 
-    res.json({ ok: true, deleted: result.rows[0] });
+    await pool.query("DELETE FROM gateways WHERE id = ?", [req.params.id]);
+    res.json({ ok: true, deleted: rows[0] });
   } catch (err) {
     console.error("❌ Delete gateway error:", err.message);
     res.status(500).json({ error: "Failed to delete gateway" });

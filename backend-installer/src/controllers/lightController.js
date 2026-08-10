@@ -1,5 +1,6 @@
 /**
  * Light Controller — Full CRUD with joined light_status data.
+ * Converted for MySQL (using mysql2/promise)
  */
 
 const pool = require("../config/db");
@@ -8,7 +9,7 @@ const pool = require("../config/db");
 
 const getAllLights = async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT l.*,
              ls.brightness_percent,
              ls.fault_status    AS status_fault,
@@ -31,7 +32,7 @@ const getAllLights = async (req, res) => {
       ORDER BY l.id
     `);
 
-    res.json(result.rows);
+    res.json(rows);
   } catch (err) {
     console.error("❌ getAllLights error:", err.message);
     res.status(500).json({ error: "Failed to fetch lights" });
@@ -42,7 +43,7 @@ const getAllLights = async (req, res) => {
 
 const getLightById = async (req, res) => {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT l.*,
              ls.brightness_percent,
              ls.fault_status    AS status_fault,
@@ -62,14 +63,14 @@ const getLightById = async (req, res) => {
              ls.relay_state
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
-      WHERE l.id = $1
+      WHERE l.id = ?
     `, [req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Light not found" });
     }
 
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     console.error("❌ getLightById error:", err.message);
     res.status(500).json({ error: "Failed to fetch light" });
@@ -89,14 +90,13 @@ const createLight = async (req, res) => {
   }
 
   try {
-    // Use req.user.id as fallback for installer and user_id
     const installerId = installer || (req.user && req.user.id) || 1;
     const userId = user_id || (req.user && req.user.id) || 1;
 
-    const result = await pool.query(`
+    // MySQL doesn't support RETURNING, so we grab the insertId and SELECT it
+    const [result] = await pool.query(`
       INSERT INTO lights (name, serial_number, pole_number, latitude, longitude, installer, user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
       name || null,
       serial_number,
@@ -107,9 +107,11 @@ const createLight = async (req, res) => {
       userId,
     ]);
 
-    res.status(201).json(result.rows[0]);
+    const [newLight] = await pool.query("SELECT * FROM lights WHERE id = ?", [result.insertId]);
+
+    res.status(201).json(newLight[0]);
   } catch (err) {
-    if (err.code === "23505") { // unique violation
+    if (err.code === "ER_DUP_ENTRY" || err.errno === 1062) { // MySQL unique violation
       return res.status(409).json({ error: "Serial number already exists" });
     }
     console.error("❌ createLight error:", err.message);
@@ -125,15 +127,14 @@ const updateLight = async (req, res) => {
   try {
     const fields = [];
     const values = [];
-    let idx = 1;
 
-    if (name !== undefined) { fields.push(`name = $${idx++}`); values.push(name); }
-    if (serial_number !== undefined) { fields.push(`serial_number = $${idx++}`); values.push(serial_number); }
-    if (pole_number !== undefined) { fields.push(`pole_number = $${idx++}`); values.push(pole_number); }
-    if (latitude !== undefined) { fields.push(`latitude = $${idx++}`); values.push(latitude); }
-    if (longitude !== undefined) { fields.push(`longitude = $${idx++}`); values.push(longitude); }
-    if (connection_status !== undefined) { fields.push(`connection_status = $${idx++}`); values.push(connection_status); }
-    if (fault_status !== undefined) { fields.push(`fault_status = $${idx++}`); values.push(fault_status); }
+    if (name !== undefined) { fields.push(`name = ?`); values.push(name); }
+    if (serial_number !== undefined) { fields.push(`serial_number = ?`); values.push(serial_number); }
+    if (pole_number !== undefined) { fields.push(`pole_number = ?`); values.push(pole_number); }
+    if (latitude !== undefined) { fields.push(`latitude = ?`); values.push(latitude); }
+    if (longitude !== undefined) { fields.push(`longitude = ?`); values.push(longitude); }
+    if (connection_status !== undefined) { fields.push(`connection_status = ?`); values.push(connection_status); }
+    if (fault_status !== undefined) { fields.push(`fault_status = ?`); values.push(fault_status); }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
@@ -142,17 +143,23 @@ const updateLight = async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(req.params.id);
 
-    const result = await pool.query(
-      `UPDATE lights SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
+    const [result] = await pool.query(
+      `UPDATE lights SET ${fields.join(", ")} WHERE id = ?`,
       values
     );
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Light not found" });
     }
 
-    res.json(result.rows[0]);
+    // Fetch the updated record since MySQL lacks RETURNING
+    const [updatedLight] = await pool.query("SELECT * FROM lights WHERE id = ?", [req.params.id]);
+
+    res.json(updatedLight[0]);
   } catch (err) {
+    if (err.code === "ER_DUP_ENTRY" || err.errno === 1062) { 
+      return res.status(409).json({ error: "Serial number already exists" });
+    }
     console.error("❌ updateLight error:", err.message);
     res.status(500).json({ error: "Failed to update light" });
   }
@@ -168,18 +175,20 @@ const patchLightLocation = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       UPDATE lights
-      SET latitude = $1, longitude = $2, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3
-      RETURNING *
+      SET latitude = ?, longitude = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
     `, [latitude, longitude, req.params.id]);
 
-    if (result.rows.length === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Light not found" });
     }
 
-    res.json(result.rows[0]);
+    // Fetch the updated record
+    const [updatedLight] = await pool.query("SELECT * FROM lights WHERE id = ?", [req.params.id]);
+
+    res.json(updatedLight[0]);
   } catch (err) {
     console.error("❌ patchLightLocation error:", err.message);
     res.status(500).json({ error: "Failed to update light location" });
@@ -190,16 +199,19 @@ const patchLightLocation = async (req, res) => {
 
 const deleteLight = async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM lights WHERE id = $1 RETURNING id, name, serial_number",
+    // Select the record first so we can return the data (MySQL lacks RETURNING)
+    const [rows] = await pool.query(
+      "SELECT id, name, serial_number FROM lights WHERE id = ?",
       [req.params.id]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Light not found" });
     }
 
-    res.json({ ok: true, deleted: result.rows[0] });
+    await pool.query("DELETE FROM lights WHERE id = ?", [req.params.id]);
+
+    res.json({ ok: true, deleted: rows[0] });
   } catch (err) {
     console.error("❌ deleteLight error:", err.message);
     res.status(500).json({ error: "Failed to delete light" });

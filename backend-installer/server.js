@@ -4,6 +4,7 @@ const app = require("./src/app");
 const { initMqttClient } = require("./src/services/mqttService");
 const { initTelemetryStore, loadFromDb } = require("./src/services/telemetryStore");
 const { initCommandStore } = require("./src/services/commandStore");
+const { initScheduleDispatcher } = require("./src/services/scheduleDispatcher");
 
 const PORT = process.env.PORT || 5000;
 
@@ -15,6 +16,9 @@ initCommandStore();
 loadFromDb().then(() => {
   // Connect to TTS MQTT for live uplink telemetry
   initMqttClient();
+  
+  // Start schedule dispatcher
+  initScheduleDispatcher();
   
   app.listen(PORT, () => {
     console.log(`✅ Smartlight backend running on port ${PORT}`);

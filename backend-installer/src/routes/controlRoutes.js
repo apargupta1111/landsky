@@ -5,6 +5,7 @@
  * directly to TTS via the Application Server API.
  * 
  * Now also logs every command to light_action_logs in the database.
+ * Converted for MySQL (using mysql2/promise).
  */
 
 const express = require("express");
@@ -37,17 +38,17 @@ const WHITE_LIGHT_HEX = "70"; // white CCT colour
 async function logAction(deviceId, action, dimValue) {
   try {
     // Look up the light's DB id by name
-    const lightResult = await pool.query(
-      "SELECT id FROM lights WHERE name = $1",
+    const [rows] = await pool.query(
+      "SELECT id FROM lights WHERE name = ?",
       [deviceId]
     );
 
-    if (lightResult.rows.length === 0) return; // device not in DB
+    if (rows.length === 0) return; // device not in DB
 
-    const lightId = lightResult.rows[0].id;
+    const lightId = rows[0].id;
 
     await pool.query(
-      "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES ($1, $2, $3)",
+      "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES (?, ?, ?)",
       [lightId, action, dimValue]
     );
   } catch (err) {

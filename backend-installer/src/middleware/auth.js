@@ -3,6 +3,8 @@
  *
  * Verifies the Bearer token in the Authorization header.
  * On success, attaches { id, email, role } to req.user.
+ * 
+ * Note: This file is database-agnostic and works with both PostgreSQL and MySQL.
  */
 
 const jwt = require("jsonwebtoken");

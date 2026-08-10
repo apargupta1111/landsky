@@ -167,17 +167,17 @@ function initMqttClient() {
  */
 async function persistTelemetryToDb(deviceId, data) {
   // Find the light by name (TTS device_id matches lights.name)
-  const lightResult = await pool.query(
-    "SELECT id FROM lights WHERE name = $1",
+  const [lightRows] = await pool.query(
+    "SELECT id FROM lights WHERE name = ?",
     [deviceId]
   );
 
-  if (lightResult.rows.length === 0) {
+  if (lightRows.length === 0) {
     // Device not registered in DB — skip persistence
     return;
   }
 
-  const lightId = lightResult.rows[0].id;
+  const lightId = lightRows[0].id;
 
   // UPSERT light_status
   await pool.query(`
@@ -187,23 +187,23 @@ async function persistTelemetryToDb(deviceId, data) {
       internal_temp_C, lamp_on_time_hours, led_mode, led_power_W,
       operating_time_hours, output_current_mA, output_voltage_V,
       power_factor, relay_state
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-    ON CONFLICT (light_id) DO UPDATE SET
-      brightness_percent    = COALESCE(EXCLUDED.brightness_percent, light_status.brightness_percent),
-      fault_status          = COALESCE(EXCLUDED.fault_status, light_status.fault_status),
-      input_current_mA      = COALESCE(EXCLUDED.input_current_mA, light_status.input_current_mA),
-      input_frequency_Hz    = COALESCE(EXCLUDED.input_frequency_Hz, light_status.input_frequency_Hz),
-      input_power_W         = COALESCE(EXCLUDED.input_power_W, light_status.input_power_W),
-      input_voltage_V       = COALESCE(EXCLUDED.input_voltage_V, light_status.input_voltage_V),
-      internal_temp_C       = COALESCE(EXCLUDED.internal_temp_C, light_status.internal_temp_C),
-      lamp_on_time_hours    = COALESCE(EXCLUDED.lamp_on_time_hours, light_status.lamp_on_time_hours),
-      led_mode              = COALESCE(EXCLUDED.led_mode, light_status.led_mode),
-      led_power_W           = COALESCE(EXCLUDED.led_power_W, light_status.led_power_W),
-      operating_time_hours  = COALESCE(EXCLUDED.operating_time_hours, light_status.operating_time_hours),
-      output_current_mA     = COALESCE(EXCLUDED.output_current_mA, light_status.output_current_mA),
-      output_voltage_V      = COALESCE(EXCLUDED.output_voltage_V, light_status.output_voltage_V),
-      power_factor          = COALESCE(EXCLUDED.power_factor, light_status.power_factor),
-      relay_state           = COALESCE(EXCLUDED.relay_state, light_status.relay_state)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      brightness_percent    = COALESCE(VALUES(brightness_percent), light_status.brightness_percent),
+      fault_status          = COALESCE(VALUES(fault_status), light_status.fault_status),
+      input_current_mA      = COALESCE(VALUES(input_current_mA), light_status.input_current_mA),
+      input_frequency_Hz    = COALESCE(VALUES(input_frequency_Hz), light_status.input_frequency_Hz),
+      input_power_W         = COALESCE(VALUES(input_power_W), light_status.input_power_W),
+      input_voltage_V       = COALESCE(VALUES(input_voltage_V), light_status.input_voltage_V),
+      internal_temp_C       = COALESCE(VALUES(internal_temp_C), light_status.internal_temp_C),
+      lamp_on_time_hours    = COALESCE(VALUES(lamp_on_time_hours), light_status.lamp_on_time_hours),
+      led_mode              = COALESCE(VALUES(led_mode), light_status.led_mode),
+      led_power_W           = COALESCE(VALUES(led_power_W), light_status.led_power_W),
+      operating_time_hours  = COALESCE(VALUES(operating_time_hours), light_status.operating_time_hours),
+      output_current_mA     = COALESCE(VALUES(output_current_mA), light_status.output_current_mA),
+      output_voltage_V      = COALESCE(VALUES(output_voltage_V), light_status.output_voltage_V),
+      power_factor          = COALESCE(VALUES(power_factor), light_status.power_factor),
+      relay_state           = COALESCE(VALUES(relay_state), light_status.relay_state)
   `, [
     lightId,
     data.brightness_percent ?? null,
@@ -231,9 +231,9 @@ async function persistTelemetryToDb(deviceId, data) {
     UPDATE lights
     SET last_seen_time    = CURRENT_TIMESTAMP,
         connection_status = 'on',
-        fault_status      = $1,
+        fault_status      = ?,
         updated_at        = CURRENT_TIMESTAMP
-    WHERE id = $2
+    WHERE id = ?
   `, [dbFaultStatus, lightId]);
 }
 
