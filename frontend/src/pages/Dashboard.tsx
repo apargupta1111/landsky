@@ -76,7 +76,8 @@ export function Dashboard() {
     const hasData = !!telemetry && Object.keys(telemetry).length > 0;
     const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
     const status: 'online' | 'warning' | 'error' =
-      !hasData ? 'error'
+      dev.connectionStatus === 'off' ? 'error'
+      : !hasData ? 'error'
       : faultStatus && faultStatus !== '–' && faultStatus !== '0' && faultStatus.toLowerCase() !== 'normal' ? 'warning'
       : 'online';
 

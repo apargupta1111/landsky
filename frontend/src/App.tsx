@@ -27,6 +27,14 @@ function App() {
     if (isAuthenticated) {
       fetchDevices();
       fetchGateways();
+
+      // Re-fetch every 60s so offline status from the backend sweep is reflected
+      const interval = setInterval(() => {
+        fetchDevices();
+        fetchGateways();
+      }, 60_000);
+
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated, fetchDevices, fetchGateways]);
 

@@ -86,7 +86,7 @@ export function LightsData({ light, isOpen, onClose }: Props) {
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center ${statusCls}`}>
                   <span className={`w-2 h-2 rounded-full mr-2 ${light.status === 'online' ? 'bg-primary animate-pulse' : light.status === 'warning' ? 'bg-warning' : 'bg-error'}`} />
-                  {light.status.toUpperCase()}
+                  {light.status === 'error' ? 'OFFLINE' : light.status.toUpperCase()}
                 </span>
                 {isLoading && <RefreshCw className="w-4 h-4 animate-spin text-primary" />}
                 {telErr && <span className="text-xs text-error truncate max-w-[180px]">{telErr}</span>}
