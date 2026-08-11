@@ -5,6 +5,8 @@ const { initMqttClient } = require("./src/services/mqttService");
 const { initTelemetryStore, loadFromDb } = require("./src/services/telemetryStore");
 const { initCommandStore } = require("./src/services/commandStore");
 const { initScheduleDispatcher } = require("./src/services/scheduleDispatcher");
+const { initGatewayPolling } = require("./src/services/gatewayStatusService");
+const { initStatusSweep } = require("./src/services/statusSweepService");
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,6 +21,12 @@ loadFromDb().then(() => {
   
   // Start schedule dispatcher
   initScheduleDispatcher();
+  
+  // Start gateway status polling
+  initGatewayPolling();
+  
+  // Start offline status sweep
+  initStatusSweep();
   
   app.listen(PORT, () => {
     console.log(`✅ Smartlight backend running on port ${PORT}`);

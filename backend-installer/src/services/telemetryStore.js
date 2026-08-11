@@ -23,7 +23,7 @@ function initTelemetryStore() {
  */
 async function loadFromDb() {
   try {
-    const result = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT l.name AS device_id,
              ls.brightness_percent,
              ls.fault_status,
@@ -44,20 +44,20 @@ async function loadFromDb() {
       JOIN lights l ON l.id = ls.light_id
     `);
 
-    for (const row of result.rows) {
+    for (const row of rows) {
       if (!row.device_id) continue;
 
       const key = row.device_id.replace(/-/g, "");
       store[key] = {
         brightness_percent: row.brightness_percent,
-        output_current_mA: row.output_current_ma,
-        output_voltage_V: row.output_voltage_v,
-        led_power_W: row.led_power_w,
-        input_current_mA: row.input_current_ma,
-        input_voltage_V: row.input_voltage_v,
-        input_power_W: row.input_power_w,
-        input_frequency_Hz: row.input_frequency_hz,
-        internal_temp_C: row.internal_temp_c,
+        output_current_mA: row.output_current_mA,
+        output_voltage_V: row.output_voltage_V,
+        led_power_W: row.led_power_W,
+        input_current_mA: row.input_current_mA,
+        input_voltage_V: row.input_voltage_V,
+        input_power_W: row.input_power_W,
+        input_frequency_Hz: row.input_frequency_Hz,
+        internal_temp_C: row.internal_temp_C,
         lamp_on_time_hours: row.lamp_on_time_hours,
         operating_time_hours: row.operating_time_hours,
         power_factor: row.power_factor ? parseFloat(row.power_factor) : null,
@@ -69,7 +69,7 @@ async function loadFromDb() {
       };
     }
 
-    console.log(`📦 Loaded ${result.rows.length} device(s) from light_status into memory`);
+    console.log(`📦 Loaded ${rows.length} device(s) from light_status into memory`);
   } catch (err) {
     console.error("⚠️  Failed to load telemetry from DB (table may not exist yet):", err.message);
   }

@@ -168,7 +168,7 @@ function initMqttClient() {
 async function persistTelemetryToDb(deviceId, data) {
   // Find the light by name (TTS device_id matches lights.name)
   const [lightRows] = await pool.query(
-    "SELECT id FROM lights WHERE name = ?",
+    "SELECT id, fault_status FROM lights WHERE name = ?",
     [deviceId]
   );
 
@@ -225,7 +225,7 @@ async function persistTelemetryToDb(deviceId, data) {
 
   // Update lights table
   const faultVal = data.fault_status;
-  const dbFaultStatus = (faultVal && faultVal !== "0" && faultVal !== "active") ? "fault" : "active";
+  const dbFaultStatus = (faultVal && faultVal !== "0" && faultVal !== "active" && faultVal !== "Normal") ? "fault" : "active";
 
   await pool.query(`
     UPDATE lights
@@ -235,6 +235,32 @@ async function persistTelemetryToDb(deviceId, data) {
         updated_at        = CURRENT_TIMESTAMP
     WHERE id = ?
   `, [dbFaultStatus, lightId]);
+
+  // Insert into alerts table if transitioning to fault
+  if (dbFaultStatus === "fault" && lightRows[0].fault_status !== "fault") {
+    try {
+      let realProblem = "Hardware Fault";
+      let detailMsg = `Device reported fault status: ${faultVal}`;
+
+      if (faultVal === "1" || faultVal === 1) {
+        realProblem = "SHORT CIRCUIT";
+        detailMsg = "FAULT: Short circuit on LED output!";
+      } else if (faultVal === "2" || faultVal === 2) {
+        realProblem = "OPEN CIRCUIT";
+        detailMsg = "FAULT: Open circuit on LED output!";
+      } else {
+        realProblem = `Unknown Fault (${faultVal})`;
+        detailMsg = `Unknown fault code: ${faultVal}`;
+      }
+
+      await pool.query(`
+        INSERT INTO alerts (light_id, alert_type, severity, message, acknowledged_by, resolved_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [lightId, realProblem, 'high', detailMsg, 1, 1]);
+    } catch (err) {
+      console.error(`⚠️ Failed to insert alert for ${deviceId}:`, err.message);
+    }
+  }
 }
 
 /**

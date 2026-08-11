@@ -14,23 +14,28 @@ router.get("/", async (req, res) => {
   try {
     const { status, light_id, severity, limit } = req.query;
 
-    let query = "SELECT * FROM alerts WHERE 1=1";
+    let query = `
+      SELECT a.*, l.name as light_name 
+      FROM alerts a 
+      LEFT JOIN lights l ON a.light_id = l.id 
+      WHERE 1=1
+    `;
     const values = [];
 
     if (status) {
-      query += ` AND status = ?`;
+      query += ` AND a.status = ?`;
       values.push(status);
     }
     if (light_id) {
-      query += ` AND light_id = ?`;
+      query += ` AND a.light_id = ?`;
       values.push(light_id);
     }
     if (severity) {
-      query += ` AND severity = ?`;
+      query += ` AND a.severity = ?`;
       values.push(severity);
     }
 
-    query += " ORDER BY created_at DESC";
+    query += " ORDER BY a.created_at DESC";
 
     if (limit) {
       query += ` LIMIT ?`;

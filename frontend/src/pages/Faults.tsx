@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, Filter, X, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -14,6 +14,10 @@ export function Faults() {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [activeFault, setActiveFault] = useState<any>(null);
+
+  useEffect(() => {
+    useAppStore.getState().fetchFaults();
+  }, []);
 
   const filteredFaults = useMemo(
     () => faults.filter((fault) => {

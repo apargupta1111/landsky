@@ -46,6 +46,8 @@ export interface AppState {
   setSelectedWardId: (id: string | null) => void;
 
   faults: Fault[];
+  isLoadingFaults: boolean;
+  fetchFaults: () => Promise<void>;
 
   gateways: Gateway[];
   selectedGatewayId: string | null;

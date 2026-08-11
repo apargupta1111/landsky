@@ -42,22 +42,22 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
   const addDevice = useAppStore((s) => s.addDevice);
   const devices   = useAppStore((s) => s.devices);
 
-  const [name,        setName]        = useState('');
-  const [address,     setAddress]     = useState('');
-  const [lat,         setLat]         = useState('');
-  const [lng,         setLng]         = useState('');
+  const [name,         setName]         = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
+  const [lat,          setLat]          = useState('');
+  const [lng,          setLng]          = useState('');
   const [ttsDeviceId, setTtsDeviceId] = useState('');
   const [error,       setError]       = useState('');
   const [success,     setSuccess]     = useState(false);
 
   const reset = () => {
-    setName(''); setAddress(''); setLat(''); setLng('');
+    setName(''); setSerialNumber(''); setLat(''); setLng('');
     setTtsDeviceId(''); setError(''); setSuccess(false);
   };
 
   const handleClose = () => { reset(); onClose(); };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -71,27 +71,48 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
       setError('Longitude must be a number between -180 and 180.'); return;
     }
 
-    // Auto-generate ID from TTS device ID or name
-    const rawId = (ttsDeviceId.trim() || name.trim().toLowerCase().replace(/\s+/g, '-'));
-    const id    = rawId.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-    if (devices.find((d) => d.id === id)) {
-      setError(`A device with ID "${id}" already exists.`); return;
+    if (!serialNumber.trim()) {
+      setError('Serial Number is required.'); return;
     }
 
-    const device: Device = {
-      id,
-      name:        name.trim(),
-      address:     address.trim(),
-      lat:         latNum,
-      lng:         lngNum,
-      ttsDeviceId: ttsDeviceId.trim() || id,
-      addedAt:     new Date().toISOString(),
-    };
+    const ttsId = (ttsDeviceId.trim() || name.trim()).toLowerCase().replace(/\s+/g, '-');
+    
+    try {
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const res = await fetch(`${SERVER_IP}/api/lights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: ttsId,
+          serial_number: serialNumber.trim(),
+          latitude: latNum,
+          longitude: lngNum,
+        }),
+      });
 
-    addDevice(device);
-    setSuccess(true);
-    setTimeout(() => { handleClose(); }, 1200);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to add light');
+      }
+
+      const created = await res.json();
+      
+      const device: Device = {
+        id: created.name || `light-${created.id}`,
+        name: created.name || `Light ${created.id}`,
+        address: '',
+        lat: latNum,
+        lng: lngNum,
+        ttsDeviceId: created.name,
+        addedAt: new Date().toISOString(),
+      };
+
+      addDevice(device);
+      setSuccess(true);
+      setTimeout(() => { handleClose(); }, 1200);
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -133,7 +154,7 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
                 <Field id="al-name"    label="Display Name"    icon={<Tag className="w-4 h-4"/>}   placeholder="e.g. Main Gate Light"   value={name}        onChange={setName} />
                 <Field id="al-tts"     label="TTS Device ID"   icon={<Wifi className="w-4 h-4"/>}  placeholder="e.g. streetlight-02"    value={ttsDeviceId} onChange={setTtsDeviceId} required={false} />
               </div>
-              <Field id="al-address" label="Physical Address" icon={<MapPin className="w-4 h-4"/>} placeholder="Street, City, State PIN" value={address}     onChange={setAddress} />
+              <Field id="al-serial" label="MAC / Serial Number" icon={<Hash className="w-4 h-4"/>} placeholder="e.g. 05-50-32-34-86-39-4a-20" value={serialNumber} onChange={setSerialNumber} />
               <div className="grid grid-cols-2 gap-4">
                 <Field id="al-lat" label="Latitude"  icon={<Hash className="w-4 h-4"/>} placeholder="e.g. 28.4859" value={lat} onChange={setLat} type="number" />
                 <Field id="al-lng" label="Longitude" icon={<Hash className="w-4 h-4"/>} placeholder="e.g. 77.5342" value={lng} onChange={setLng} type="number" />
