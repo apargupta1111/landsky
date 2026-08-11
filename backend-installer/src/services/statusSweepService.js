@@ -8,8 +8,12 @@ const SWEEP_INTERVAL_MS = 60 * 1000; // Run every 1 minute
 const TIMEOUT_MINUTES = 15; // 15 minutes timeout
 
 let sweepInterval = null;
+let isSweeping = false;
 
 async function sweepOfflineDevices() {
+  if (isSweeping) return;
+  isSweeping = true;
+  
   try {
     // 1. Mark lights as offline if last_seen_time > 15 mins ago
     const [lightsResult] = await pool.query(`
@@ -37,6 +41,8 @@ async function sweepOfflineDevices() {
 
   } catch (err) {
     console.error("❌ Status sweep error:", err.message);
+  } finally {
+    isSweeping = false;
   }
 }
 
