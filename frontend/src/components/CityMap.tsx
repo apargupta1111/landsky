@@ -74,31 +74,7 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
     return { status, brightness, power };
   };
 
-  const gatewayMarkers = gateways.map((gateway) => ({
-    id: gateway.id,
-    lat: gateway.lat,
-    lng: gateway.lng,
-    label: `Gateway ${gateway.id}`,
-    type: 'gateway' as const,
-    status: gateway.status === 'Online' ? 'online' : gateway.status === 'Warning' ? 'warning' : 'error',
-    connectedLights: gateway.connectedLights,
-    onlineLights: gateway.onlineLights,
-    faults: gateway.faults,
-    signal: gateway.signal,
-  }));
 
-  const lightMarkers = lights.map((light) => ({
-    id: light.id,
-    lat: light.lat,
-    lng: light.lng,
-    label: `${light.name} • ${light.gateway}`,
-    type: 'light' as const,
-    status: light.status === 'Online' ? 'online' : light.status === 'Warning' ? 'warning' : 'error',
-    brightness: light.brightness,
-    power: light.power,
-    gateway: light.gateway,
-    lastCommunication: light.lastCommunication,
-  }));
 
   const devices = [
     ...storeDevices.map((dev) => {
@@ -107,16 +83,14 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
         id: dev.id,
         lat: dev.lat,
         lng: dev.lng,
-        label: dev.address,
+        label: dev.address || dev.name,
         name: dev.name,
-        type: 'device' as const,
+        type: 'light' as const,
         status: props.status,
         brightness: props.brightness,
         power: props.power,
       };
     }),
-    ...gatewayMarkers,
-    ...lightMarkers,
   ];
 
   const active   = devices.filter((d) => d.status === 'online').length;
@@ -172,17 +146,11 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
 
       // ── Place a marker for every device, gateway, and light ─────────────
       devices.forEach((dev) => {
-        const colour =
-          dev.type === 'gateway' ? '#38bdf8'
-          : dev.type === 'light'   ? '#22c55e'
-          : '#ef4444';
+        const colour = dev.status === 'online' ? '#22c55e' : dev.status === 'warning' ? '#f59e0b' : '#ef4444';
 
-        const size = dev.type === 'gateway' ? 48 : dev.type === 'light' ? 28 : 40;
-        const innerSize = dev.type === 'gateway' ? 12 : dev.type === 'light' ? 6 : 9;
-        const outerRing = dev.type === 'light' ? '' : `
-          <div style="position:absolute;inset:0;border-radius:50%;border:2px solid ${colour};animation:ping 1.2s cubic-bezier(0,0,0.2,1) infinite;opacity:0.7;"></div>
-          <div style="position:absolute;inset:4px;border-radius:50%;border:1.5px solid ${colour};animation:ping 1.2s cubic-bezier(0,0,0.2,1) infinite;opacity:0.5;animation-delay:0.35s;"></div>
-        `;
+        const size = 28;
+        const innerSize = 6;
+        const outerRing = '';
 
         const svgIcon = L.divIcon({
           className: '',
@@ -210,24 +178,11 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
         const popupSub    = isDarkMode ? '#94a3b8' : '#64748b';
         const popupVal    = isDarkMode ? '#e2e8f0' : '#1e293b';
 
-        const extraRows = dev.type === 'gateway'
-          ? [
-              ['Connected', `${(dev as any).connectedLights} lights`],
-              ['Online', `${(dev as any).onlineLights}`],
-              ['Faults', `${(dev as any).faults}`],
-              ['Signal', `${(dev as any).signal} dBm`],
-            ]
-          : dev.type === 'light'
-          ? [
-              ['Gateway', `${(dev as any).gateway}`],
-              ['Brightness', `${dev.brightness}%`],
-              ['Power', `${dev.power} W`],
-              ['Last Seen', `${(dev as any).lastCommunication}`],
-            ]
-          : [
-              ['Brightness', `${dev.brightness}%`],
-              ['Power', `${dev.power} W`],
-            ];
+        const extraRows = [
+          ['Gateway', dev.label],
+          ['Brightness', `${dev.brightness}%`],
+          ['Power', `${dev.power} W`],
+        ];
 
         const extraHtml = extraRows
           .map(([label, value]) => `
@@ -261,15 +216,13 @@ export function CityMap({ isOpen, onClose }: CityMapProps) {
             className: 'sl-popup',
           });
 
-        // Add click handler for light markers to open LightsData modal
-        if (dev.type === 'light') {
-          marker.on('click', () => {
-            const light = lights.find((l) => l.id === dev.id);
-            if (light) {
-              setActiveLight(light);
-            }
-          });
-        }
+        // Add click handler to open LightsData modal
+        marker.on('click', () => {
+          const light = storeDevices.find((l) => l.id === dev.id);
+          if (light) {
+            setActiveLight({ ...light, status: dev.status });
+          }
+        });
       });
 
       // Fit map to all markers if multiple devices

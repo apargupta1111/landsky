@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, MapPin, Wifi, Tag, Hash, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Plus, Wifi, Tag, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import type { Device } from '../store/types';
 
@@ -40,7 +40,7 @@ function Field({
 
 export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
   const addDevice = useAppStore((s) => s.addDevice);
-  const devices   = useAppStore((s) => s.devices);
+  
 
   const [name,         setName]         = useState('');
   const [serialNumber, setSerialNumber] = useState('');

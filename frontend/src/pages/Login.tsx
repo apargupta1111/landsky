@@ -1,4 +1,4 @@
-import { useState,useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';

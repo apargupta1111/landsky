@@ -33,7 +33,7 @@ export function useTelemetry(deviceId?: string | null): UseTelemetryReturn {
   }, [deviceId]);
 
   useEffect(() => {
-    load();
+    setTimeout(load, 0);
     intervalRef.current = setInterval(load, POLL_INTERVAL_MS);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

@@ -34,7 +34,7 @@ export function useColorState(deviceId?: string | null) {
   }, [deviceId]);
 
   useEffect(() => {
-    fetchColorState();
+    setTimeout(fetchColorState, 0);
     
     // Poll every 30 seconds to stay updated
     const interval = setInterval(fetchColorState, 30000);
