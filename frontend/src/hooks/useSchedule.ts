@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Schedule } from '../components/lightsData/types';
 import { ENDPOINTS } from '../config/endpoints';
 
 export function useSchedule(lightId: string) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
-  const fetchSchedules = async () => {
-    if (!lightId) return;
+  const fetchSchedules = useCallback(async () => {
     try {
-      const res = await fetch(`${ENDPOINTS.backend.base}/api/schedules?light_id=${lightId}`);
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const res = await fetch(`${SERVER_IP}/api/schedules?light_id=${lightId}`);
       if (res.ok) {
         const data = await res.json();
         const mapped = data.map((s: any) => ({
@@ -26,11 +26,11 @@ export function useSchedule(lightId: string) {
     } catch (err) {
       console.error('Failed to fetch schedules', err);
     }
-  };
+  }, [lightId]);
 
   useEffect(() => {
-    fetchSchedules();
-  }, [lightId]);
+    setTimeout(fetchSchedules, 0);
+  }, [fetchSchedules]);
 
   // Form state
   const [onTime,  setOnTime]  = useState('18:00');

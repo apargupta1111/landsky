@@ -45,7 +45,7 @@ export function useLightControl(deviceId?: string | null): UseLightControlReturn
     errorMsg,
     setDimmingLevel: (level)   => send(() => ttsCommands.setDimming(targetId, level)),
     setMaxCurrent:   (percent) => send(() => ttsCommands.setMaxCurrent(targetId, percent)),
-    setDimmingMode:  (_mode)   => send(() => ttsCommands.setDimming(targetId, 150)), // mode switch → reset to 75%
+    setDimmingMode:  ()        => send(() => ttsCommands.setDimming(targetId, 150)), // mode switch → reset to 75%
     resetDriver:     ()        => send(() => ttsCommands.resetDriver(targetId)),
     powerOn:         ()        => send(() => ttsCommands.powerOn(targetId)),
     powerOff:        ()        => send(() => ttsCommands.powerOff(targetId)),

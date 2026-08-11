@@ -36,9 +36,7 @@ const WARDS: Ward[] = [
   { id: 'ward-9', nagarpalikaId: 'bhimtal', name: 'Mehragaon', gatewayCount: 0, lightCount: 0, onlineLights: 0, status: 'At Risk' },
 ];
 
-const FAULTS: Fault[] = [
-  { id: 'F-1301', wardId: 'ward-1', wardName: 'Mallital', gatewayId: 'GW001', poleId: 'Pole-003', type: 'Power Failure', timestamp: '2026-06-10 09:18', status: 'Open', priority: 'High', assignedTo: 'Team Alpha' },
-];
+
 
 export const createProjectSlice = (set: any) => ({
   districts: DISTRICTS as District[],

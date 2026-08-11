@@ -271,11 +271,10 @@ export function WardDetails() {
       active = false;
       clearInterval(interval);
     };
-  }, [selectedWardId]); // Trigger re-load on ward change
+  }, [selectedWardId, wardDevices]); // Trigger re-load on ward change
 
   const getDeviceTelemetryProps = (dev: any) => {
     const telemetry = telemetries[dev.id];
-    const hasData = !!telemetry && Object.keys(telemetry).length > 0;
     const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
     const status: 'online' | 'warning' | 'error' =
       dev.connectionStatus === 'off' ? 'error'

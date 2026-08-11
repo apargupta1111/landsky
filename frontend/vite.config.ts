@@ -10,6 +10,7 @@ export default defineConfig({
   ],
   server: {
     port: 3001,
+    host: true, // Allow network access
     proxy: {
       // Proxy backend requests to avoid browser CORS block
       '/nr-api': {
@@ -21,6 +22,7 @@ export default defineConfig({
   },
   preview: {
     port: 3001,
+    host: true, // Allow network access
   }
 })
 

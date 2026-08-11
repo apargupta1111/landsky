@@ -24,8 +24,7 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
   const [pendingReset,  setPendingReset]  = useState(false);
   const { colorMode, setColorMode, isLoading: isLoadingColor } = useColorState(deviceId);
 
-  const [isApplyingDim, setIsApplyingDim] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+
 
   // Fetch the last set brightness from the database on mount
   useEffect(() => {
@@ -47,12 +46,10 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
   }, [dbId]);
 
   const handleApplyDimming = async () => {
-    setIsApplyingDim(true);
     try {
       await ctrl.setDimmingLevel(dimLevel);
     } finally {
       // Ignore telemetry overrides for 10 seconds while the device updates
-      setTimeout(() => setIsApplyingDim(false), 10000);
     }
   };
 
@@ -92,8 +89,6 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
           <input
             type="range" min="0" max="100" value={dimLevel}
             onChange={(e) => setDimLevel(Number(e.target.value))}
-            onPointerDown={() => setIsDragging(true)}
-            onPointerUp={() => setIsDragging(false)}
             className="w-full h-2 rounded-lg cursor-pointer accent-primary"
           />
           <div className="flex justify-between mt-2">
@@ -109,22 +104,37 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
         </div>
 
         {/* Quick Power */}
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--panel-border)]">
-          <button
-            onClick={() => ctrl.powerOn()}
-            disabled={disabled}
-            className="py-2.5 rounded-lg bg-primary/20 text-primary border border-primary/50 text-sm font-bold hover:bg-primary/30 disabled:opacity-40 transition-colors"
-          >
-            Power ON
-          </button>
-          <button
-            onClick={() => ctrl.powerOff()}
-            disabled={disabled}
-            className="py-2.5 rounded-lg bg-error/10 text-error border border-error/30 text-sm font-bold hover:bg-error/20 disabled:opacity-40 transition-colors"
-          >
-            Power OFF
-          </button>
-        </div>
+        {(() => {
+          const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
+          const isOn = brightness > 0;
+
+          return (
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--panel-border)]">
+              <button
+                onClick={() => ctrl.powerOn()}
+                disabled={disabled || isOn}
+                className={`py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  !isOn
+                    ? 'bg-primary/20 text-primary border-2 border-primary/50 shadow-[0_0_12px_rgba(0,255,136,0.15)] hover:bg-primary/30'
+                    : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border border-[var(--panel-border)] opacity-40 cursor-not-allowed'
+                }`}
+              >
+                Power ON
+              </button>
+              <button
+                onClick={() => ctrl.powerOff()}
+                disabled={disabled || !isOn}
+                className={`py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  isOn
+                    ? 'bg-error/20 text-error border-2 border-error/50 shadow-[0_0_12px_rgba(239,68,68,0.15)] hover:bg-error/30'
+                    : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border border-[var(--panel-border)] opacity-40 cursor-not-allowed'
+                }`}
+              >
+                Power OFF
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Light Color Temperature */}
         <div className="pt-2 border-t border-[var(--panel-border)]">
