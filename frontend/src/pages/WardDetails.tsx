@@ -278,7 +278,7 @@ export function WardDetails() {
     const hasData = !!telemetry && Object.keys(telemetry).length > 0;
     const faultStatus = (telemetry as any)?.fault_status?.[0]?.value;
     const status: 'online' | 'warning' | 'error' =
-      dev.connection_status === 'off' ? 'error'
+      dev.connectionStatus === 'off' ? 'error'
       : faultStatus && faultStatus !== '–' && faultStatus !== '0' && faultStatus.toLowerCase() !== 'normal' ? 'warning'
       : 'online';
 
