@@ -26,6 +26,7 @@ export function Gateways() {
 
   // ── Modal Toggle Controllers ─────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingGatewayId, setEditingGatewayId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -51,30 +52,28 @@ export function Gateways() {
     setActionError(null);
 
     try {
- 
-      const installRes = await fetch('http://192.168.1.47:3000/api/landsky_streetlight/', {
-        method: 'POST',
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const url = editingGatewayId 
+        ? `${SERVER_IP}/api/gateways/${editingGatewayId}`
+        : `${SERVER_IP}/api/gateways`;
+      
+      const method = editingGatewayId ? 'PUT' : 'POST';
+
+      const installRes = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantId: Number(newTenantId),
-          gateways: [
-          {
-            
-            eui: newEui.trim(),
-            name: newName.trim() || "Unnamed Base Station",
-            region: newRegion,
-            location: {
-              x: Number(newLat),
-              y: Number(newLng)
-            }
-          }
-        ],
-          lights: [], 
+          eui: newEui.trim(),
+          name: newName.trim() || "Unnamed Base Station",
+          region: newRegion,
+          latitude: Number(newLat),
+          longitude: Number(newLng),
         }),
       });
 
       if (!installRes.ok) {
-        throw new Error(`Installation response failure. Status code: ${installRes.status}`);
+        const errorData = await installRes.json();
+        throw new Error(errorData.error || `Installation response failure. Status code: ${installRes.status}`);
       }
 
       // Re-trigger global Zustand synchronization loop
@@ -82,6 +81,7 @@ export function Gateways() {
       
       // Clear forms & modal context
       setIsAddModalOpen(false);
+      setEditingGatewayId(null);
       setNewEui('');
       setNewName('');
     } catch (err: any) {
@@ -101,12 +101,14 @@ export function Gateways() {
     setActionError(null);
 
     try {
-      const deleteRes = await fetch(`http://192.168.1.47:3000/api/landsky_streetlight/gateways/${id}`, {
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const deleteRes = await fetch(`${SERVER_IP}/api/gateways/${id}`, {
         method: 'DELETE',
       });
 
       if (!deleteRes.ok) {
-        throw new Error(`Deletion target rejected. Status code: ${deleteRes.status}`);
+        const errorData = await deleteRes.json();
+        throw new Error(errorData.error || `Deletion target rejected. Status code: ${deleteRes.status}`);
       }
 
       await fetchGateways();
@@ -116,6 +118,19 @@ export function Gateways() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditClick = (gateway: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingGatewayId(gateway.id);
+    setNewEui(gateway.eui || '');
+    setNewName(gateway.name || '');
+    setNewTenantId(String(gateway.tenantId || 1));
+    setNewRegion(gateway.region || 'IN865');
+    setNewLat(String(gateway.lat || 0));
+    setNewLng(String(gateway.lng || 0));
+    setActionError(null);
+    setIsAddModalOpen(true);
   };
 
   // ── Memoized Text Search Matching Filter ────────────────────────────────
@@ -176,7 +191,12 @@ export function Gateways() {
         {/* Management Execution Triggers */}
         <div className="flex gap-3 mt-4">
           <button
-            onClick={() => { setActionError(null); setIsAddModalOpen(true); }}
+            onClick={() => { 
+              setActionError(null); 
+              setEditingGatewayId(null);
+              setNewEui(''); setNewName(''); setNewTenantId('1'); setNewRegion('IN865'); setNewLat('26.876277'); setNewLng('91.866539');
+              setIsAddModalOpen(true); 
+            }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition-all shadow-md shadow-blue-500/20 active:scale-95"
           >
             <Plus className="w-4 h-4" /> Add Gateway
@@ -184,7 +204,7 @@ export function Gateways() {
         </div>
 
         {/* ── Main Responsive Grid Directory Table ─────────────────────── */}
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--panel-border)] shadow-sm bg-white dark:bg-slate-950">
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--panel-border)] shadow-sm bg-transparent">
           <div className="min-w-[1300px]">
             {/* Header Columns Grid Structure */}
             <div className="grid grid-cols-10 gap-4 bg-black/[0.02] dark:bg-white/[0.02] text-[var(--text-secondary)] text-xs uppercase tracking-wider px-6 py-3.5 border-b border-[var(--panel-border)] font-bold">
@@ -225,12 +245,12 @@ export function Gateways() {
                       setSelectedGatewayId(gateway.id);
                       setCurrentPage('gatewayDetails');
                     }}
-                    className={`w-full text-left px-6 py-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 grid grid-cols-10 gap-4 items-center border-b border-[var(--panel-border)] last:border-b-0 ${
+                    className={`w-full text-left px-6 py-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5 grid grid-cols-10 gap-4 items-center border-b border-[var(--panel-border)] last:border-b-0 ${
                       index % 2 === 0 ? 'bg-transparent' : 'bg-black/[0.01] dark:bg-white/[0.01]'
                     }`}
                   >
-                    <div className="font-mono text-xs font-semibold tracking-tight text-blue-600 dark:text-blue-400 truncate" title={gateway.id}>
-                      {gateway.id}
+                    <div className="font-mono text-xs font-semibold tracking-tight text-blue-600 dark:text-blue-400 truncate" title={gateway.eui}>
+                      {gateway.eui}
                     </div>
                     <div className="font-medium truncate">{gateway.name || 'Unnamed Base Station'}</div>
                     <div className="text-xs font-medium text-[var(--text-secondary)]">Tenant-{gateway.tenantId}</div>
@@ -250,7 +270,15 @@ export function Gateways() {
                     <div className="text-xs font-medium">
                       {gateway.lastSeen ? new Date(gateway.lastSeen).toLocaleTimeString() : 'Never Connect'}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => handleEditClick(gateway, e)}
+                        disabled={isSubmitting}
+                        className="inline-flex items-center justify-center p-2 rounded-lg text-blue-500 hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+                        title="Edit Gateway"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                      </button>
                       <button
                         onClick={(e) => handleDeleteRow(gateway.id, gateway.name, e)}
                         disabled={isSubmitting}
@@ -272,8 +300,8 @@ export function Gateways() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="w-full max-w-md rounded-2xl border border-[var(--panel-border)] p-6 bg-white dark:bg-slate-900 shadow-2xl relative animate-scale-up">
-            <h3 className="text-xl font-bold mb-1">Add New Gateway</h3>
-            <p className="text-xs text-[var(--text-secondary)] mb-4">Register new physical concentrator tracking routes directly to database storage context.</p>
+            <h3 className="text-xl font-bold mb-1">{editingGatewayId ? 'Edit Gateway' : 'Add New Gateway'}</h3>
+            <p className="text-xs text-[var(--text-secondary)] mb-4">{editingGatewayId ? 'Update physical concentrator tracking details.' : 'Register new physical concentrator tracking routes directly to database storage context.'}</p>
             
             {actionError && (
               <div className="mb-4 p-3 rounded-xl bg-red-500/10 text-red-500 text-xs font-medium border border-red-500/20">{actionError}</div>
@@ -350,7 +378,7 @@ export function Gateways() {
                 <button
                   type="button"
                   disabled={isSubmitting}
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => { setIsAddModalOpen(false); setEditingGatewayId(null); }}
                   className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--panel-border)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
                 >
                   Cancel
@@ -360,7 +388,7 @@ export function Gateways() {
                   disabled={isSubmitting}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 min-w-[110px] text-center"
                 >
-                  {isSubmitting ? 'Registering...' : 'Add Gateway'}
+                  {isSubmitting ? 'Saving...' : editingGatewayId ? 'Save Changes' : 'Add Gateway'}
                 </button>
               </div>
             </form>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings2, CalendarClock, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { X, Settings2, CalendarClock, RefreshCw, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { useTelemetry } from '../hooks/useTelemetry';
 import { useLightControl } from '../hooks/useLightControl';
 import { useSchedule } from '../hooks/useSchedule';
@@ -8,6 +8,7 @@ import { ControlsTab } from './lightsData/ControlsTab';
 import { TelemetryPanel } from './lightsData/TelemetryPanel';
 import { ScheduleTab } from './lightsData/ScheduleTab';
 import type { Light } from './lightsData/types';
+import { useAppStore } from '../store/useAppStore';
 
 interface Props {
   light: Light | null;
@@ -15,13 +16,34 @@ interface Props {
   onClose: () => void;
 }
 
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+
 export function LightsData({ light, isOpen, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'controls' | 'schedule'>('controls');
   const { data: telemetry, isLoading, error: telErr, lastUpdated, refresh } = useTelemetry(light?.ttsDeviceId);
   const ctrl  = useLightControl(light?.ttsDeviceId);
   const sched = useSchedule(light?.id ?? '');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const removeDevice = useAppStore((s: any) => s.removeDevice);
 
   if (!light) return null;
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${light.id}? This action cannot be undone.`)) return;
+    
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`${SERVER_IP}/api/lights/${light.dbId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete light');
+      
+      removeDevice(light.id);
+      onClose();
+    } catch (err: any) {
+      alert(`Error deleting light: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const TABS = [
     { key: 'controls' as const, Icon: Settings2,    label: 'Controls' },
@@ -66,16 +88,14 @@ export function LightsData({ light, isOpen, onClose }: Props) {
                   <span className={`w-2 h-2 rounded-full mr-2 ${light.status === 'online' ? 'bg-primary animate-pulse' : light.status === 'warning' ? 'bg-warning' : 'bg-error'}`} />
                   {light.status.toUpperCase()}
                 </span>
-                {lastUpdated && (
-                  <span className="text-xs text-[var(--text-secondary)] flex items-center">
-                    <RefreshCw className="w-3 h-3 mr-1" /> {lastUpdated.toLocaleTimeString()}
-                  </span>
-                )}
                 {isLoading && <RefreshCw className="w-4 h-4 animate-spin text-primary" />}
                 {telErr && <span className="text-xs text-error truncate max-w-[180px]">{telErr}</span>}
               </div>
               <div className="flex items-center gap-2 ml-auto">
-                <button onClick={refresh} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-primary/20 text-[var(--text-secondary)] hover:text-primary border border-[var(--panel-border)] transition-colors">
+                <button onClick={handleDelete} disabled={isDeleting} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-error/20 text-[var(--text-secondary)] hover:text-error border border-[var(--panel-border)] transition-colors disabled:opacity-50" title="Delete Light">
+                  <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <button onClick={refresh} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-primary/20 text-[var(--text-secondary)] hover:text-primary border border-[var(--panel-border)] transition-colors" title="Refresh Telemetry">
                   <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
                 <button onClick={onClose} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-error/20 hover:text-error transition-colors text-[var(--text-secondary)] border border-[var(--panel-border)]">
@@ -124,7 +144,7 @@ export function LightsData({ light, isOpen, onClose }: Props) {
             <div className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-hide">
               {activeTab === 'controls' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <ControlsTab ctrl={ctrl} deviceId={light?.ttsDeviceId} telemetry={telemetry} />
+                  <ControlsTab ctrl={ctrl} deviceId={light?.ttsDeviceId} dbId={light?.dbId} telemetry={telemetry} />
                   <div className="lg:col-span-2">
                     <TelemetryPanel telemetry={telemetry} />
                   </div>

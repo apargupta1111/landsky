@@ -6,6 +6,7 @@ import { tlv } from '../../hooks/useTelemetry';
 
 interface ControlsTabProps {
   deviceId?: string | null;
+  dbId?: number;
   telemetry?: TelemetryData | null;
   ctrl: {
     status: 'idle' | 'sending' | 'success' | 'error';
@@ -18,23 +19,32 @@ interface ControlsTabProps {
   };
 }
 
-export function ControlsTab({ ctrl, deviceId, telemetry }: ControlsTabProps) {
+export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProps) {
   const [dimLevel,      setDimLevel]      = useState(100);
   const [pendingReset,  setPendingReset]  = useState(false);
   const { colorMode, setColorMode, isLoading: isLoadingColor } = useColorState(deviceId);
 
   const [isApplyingDim, setIsApplyingDim] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Sync brightness slider with telemetry data
+  // Fetch the last set brightness from the database on mount
   useEffect(() => {
-    if (isApplyingDim) return;
-    const val = tlv(telemetry, 'brightness_percent', '');
-    if (val !== '') {
-      setDimLevel(Number(val));
-    } else {
-      setDimLevel(100);
-    }
-  }, [telemetry, isApplyingDim]);
+    if (!dbId) return;
+    const fetchLastDim = async () => {
+      try {
+        const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+        const res = await fetch(`${SERVER_IP}/api/action-logs?light_id=${dbId}&limit=1`);
+        if (!res.ok) return;
+        const logs = await res.json();
+        if (logs.length > 0 && logs[0].dim_value != null) {
+          setDimLevel(logs[0].dim_value);
+        }
+      } catch (err) {
+        console.error('Failed to fetch last dim value', err);
+      }
+    };
+    fetchLastDim();
+  }, [dbId]);
 
   const handleApplyDimming = async () => {
     setIsApplyingDim(true);
@@ -82,6 +92,8 @@ export function ControlsTab({ ctrl, deviceId, telemetry }: ControlsTabProps) {
           <input
             type="range" min="0" max="100" value={dimLevel}
             onChange={(e) => setDimLevel(Number(e.target.value))}
+            onPointerDown={() => setIsDragging(true)}
+            onPointerUp={() => setIsDragging(false)}
             className="w-full h-2 rounded-lg cursor-pointer accent-primary"
           />
           <div className="flex justify-between mt-2">

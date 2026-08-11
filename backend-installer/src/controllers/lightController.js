@@ -94,11 +94,12 @@ const createLight = async (req, res) => {
     const userId = user_id || (req.user && req.user.id) || 1;
 
     // MySQL doesn't support RETURNING, so we grab the insertId and SELECT it
+    const normalizedName = name ? name.toLowerCase() : null;
     const [result] = await pool.query(`
       INSERT INTO lights (name, serial_number, pole_number, latitude, longitude, installer, user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
-      name || null,
+      normalizedName,
       serial_number,
       pole_number || "0000",
       latitude,
@@ -128,7 +129,7 @@ const updateLight = async (req, res) => {
     const fields = [];
     const values = [];
 
-    if (name !== undefined) { fields.push(`name = ?`); values.push(name); }
+    if (name !== undefined) { fields.push(`name = ?`); values.push(name ? name.toLowerCase() : name); }
     if (serial_number !== undefined) { fields.push(`serial_number = ?`); values.push(serial_number); }
     if (pole_number !== undefined) { fields.push(`pole_number = ?`); values.push(pole_number); }
     if (latitude !== undefined) { fields.push(`latitude = ?`); values.push(latitude); }

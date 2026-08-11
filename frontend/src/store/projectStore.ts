@@ -44,7 +44,35 @@ export const createProjectSlice = (set: any) => ({
   districts: DISTRICTS as District[],
   nagarpalikas: NAGARPALIKAS as Nagarpalika[],
   wards: WARDS as Ward[],
-  faults: FAULTS as Fault[],
+  faults: [] as Fault[],
+  isLoadingFaults: false,
+  fetchFaults: async () => {
+    set({ isLoadingFaults: true });
+    try {
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const res = await fetch(`${SERVER_IP}/api/alerts?status=active`);
+      if (res.ok) {
+        const data = await res.json();
+        const mappedFaults: Fault[] = data.map((alert: any) => ({
+          id: `F-${alert.id}`,
+          wardId: 'ward-1', // Mocked or derived from real topology if available
+          wardName: 'Unassigned Ward',
+          gatewayId: 'Unknown GW',
+          poleId: alert.light_name || `Light-${alert.light_id}`,
+          type: alert.alert_type,
+          timestamp: new Date(alert.created_at).toLocaleString(),
+          status: alert.status === 'active' ? 'Open' : alert.status === 'acknowledged' ? 'Assigned' : 'Resolved',
+          priority: alert.severity === 'high' ? 'High' : alert.severity === 'medium' ? 'Medium' : 'Low',
+          assignedTo: alert.acknowledged_by ? `User ${alert.acknowledged_by}` : 'Unassigned',
+        }));
+        set({ faults: mappedFaults });
+      }
+    } catch (error) {
+      console.error('Failed to fetch faults', error);
+    } finally {
+      set({ isLoadingFaults: false });
+    }
+  },
   selectedDistrictId: null as string | null,
   setSelectedDistrictId: (id: string | null) => set({ selectedDistrictId: id }),
   selectedNagarpalikaId: null as string | null,
