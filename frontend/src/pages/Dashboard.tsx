@@ -104,6 +104,10 @@ export function Dashboard() {
   const onlineLights  = enrichedDevices.filter((d) => d.status === 'online').length;
   const offlineLights = enrichedDevices.filter((d) => d.status === 'error').length;
   const faultyLights  = enrichedDevices.filter((d) => d.status === 'warning').length;
+  
+  const totalPowerSaved = enrichedDevices.reduce((sum, d) => sum + (d.totalPowerSavedKwh || 0), 0);
+  const co2SavedKg = totalPowerSaved * 0.85; // 0.85 kg CO2 per kWh
+  const treesPlanted = co2SavedKg / 21.77;   // ~21.77 kg CO2 absorbed per tree per year
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
 
@@ -162,7 +166,21 @@ export function Dashboard() {
           title="Faulty Lights"
           value={`${faultyLights}`}
         />
-        
+        <KpiCard
+          title="Total Power Saved"
+          value={`${totalPowerSaved.toFixed(2)} kWh`}
+          sub="Energy conserved"
+        />
+        <KpiCard
+          title="CO2 Reduced"
+          value={`${co2SavedKg.toFixed(2)} kg`}
+          sub="Carbon footprint"
+        />
+        <KpiCard
+          title="Equivalent Trees"
+          value={`${treesPlanted.toFixed(1)}`}
+          sub="Trees planted"
+        />
       </div>
       
       

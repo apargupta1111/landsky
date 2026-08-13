@@ -26,7 +26,8 @@ const getAllLights = async (req, res) => {
              ls.output_current_mA,
              ls.output_voltage_V,
              ls.power_factor,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
       ORDER BY l.id
@@ -60,7 +61,8 @@ const getLightById = async (req, res) => {
              ls.output_current_mA,
              ls.output_voltage_V,
              ls.power_factor,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
       WHERE l.id = ?

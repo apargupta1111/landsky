@@ -167,7 +167,8 @@ CREATE TABLE light_status (
   output_current_mA     INTEGER,
   output_voltage_V      INTEGER,
   power_factor          DECIMAL(4,2),
-  relay_state           VARCHAR
+  relay_state           VARCHAR,
+  total_power_saved_kwh DECIMAL(10,4) DEFAULT 0.0000
 );
 
 -- -----------------------------------------

@@ -146,7 +146,7 @@ export function LightsData({ light, isOpen, onClose }: Props) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <ControlsTab ctrl={ctrl} deviceId={light?.ttsDeviceId} dbId={light?.dbId} telemetry={telemetry} />
                   <div className="lg:col-span-2">
-                    <TelemetryPanel telemetry={telemetry} />
+                    <TelemetryPanel telemetry={telemetry} totalPowerSavedKwh={light?.totalPowerSavedKwh} />
                   </div>
                 </div>
               )}

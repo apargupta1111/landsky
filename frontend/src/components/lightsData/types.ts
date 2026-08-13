@@ -6,6 +6,7 @@ export interface Light {
   status: 'online' | 'warning' | 'error';
   ttsDeviceId?: string;
   dbId?: number;
+  totalPowerSavedKwh?: number;
 }
 
 export interface Schedule {

@@ -133,6 +133,7 @@ CREATE TABLE light_status (
   output_voltage_V      INT,
   power_factor          DECIMAL(4,2),
   relay_state           VARCHAR(255),
+  total_power_saved_kwh DECIMAL(10,4) DEFAULT 0.0000,
   FOREIGN KEY (light_id) REFERENCES lights(id) ON DELETE CASCADE
 );
 

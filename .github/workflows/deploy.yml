@@ -1,0 +1,40 @@
+name: LANDSKY Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: landsky-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy LANDSKY
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to LANDSKY production server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.LANDSKY_HOST }}
+          username: ${{ secrets.LANDSKY_USER }}
+          key: ${{ secrets.LANDSKY_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            cd /root/landsky
+
+            echo "Starting LANDSKY deployment..."
+
+            # Ensure script is executable
+            chmod +x ./deploy/deploy.sh
+            
+            ./deploy/deploy.sh
+
+            echo "LANDSKY deployment finished."

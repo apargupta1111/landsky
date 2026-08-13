@@ -15,6 +15,7 @@ export interface Device {
   connectionStatus?: string;
   faultStatus?: string;
   lastSeenTime?: string;
+  totalPowerSavedKwh?: number;
 }
 
 export interface District {

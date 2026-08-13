@@ -20,7 +20,8 @@ router.get("/", async (req, res) => {
       SELECT l.*,
              ls.brightness_percent,
              ls.led_mode,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
       ORDER BY l.id
@@ -47,6 +48,7 @@ router.get("/", async (req, res) => {
       connectionStatus: row.connection_status,
       faultStatus: row.fault_status,
       lastSeenTime: row.last_seen_time,
+      totalPowerSavedKwh: parseFloat(row.total_power_saved_kwh) || 0,
     }));
 
     res.json(formatted);
@@ -66,7 +68,8 @@ router.get("/:deviceId", async (req, res) => {
       SELECT l.*,
              ls.brightness_percent,
              ls.led_mode,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
       WHERE l.name = ?
@@ -90,6 +93,7 @@ router.get("/:deviceId", async (req, res) => {
       connectionStatus: row.connection_status,
       faultStatus: row.fault_status,
       lastSeenTime: row.last_seen_time,
+      totalPowerSavedKwh: parseFloat(row.total_power_saved_kwh) || 0,
       lat: parseFloat(row.latitude) || 0,
       lng: parseFloat(row.longitude) || 0,
     });
