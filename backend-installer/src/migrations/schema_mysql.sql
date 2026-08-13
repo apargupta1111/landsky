@@ -87,11 +87,12 @@ CREATE INDEX idx_schedules_light_is_active ON schedules (light, is_active);
 -- -----------------------------------------
 -- ACTION LOGS
 -- -----------------------------------------
-CREATE TABLE light_action_logs (
+CREATE TABLE IF NOT EXISTS light_action_logs (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   light_id    INT NOT NULL,
-  action      VARCHAR(255) NOT NULL,
-  dim_value   INT NULL,
+  action      VARCHAR(50) NOT NULL,
+  dim_value   INT DEFAULT NULL,
+  color       VARCHAR(20) DEFAULT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (light_id) REFERENCES lights(id) ON DELETE CASCADE
 );

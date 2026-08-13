@@ -2,15 +2,50 @@ const cron = require("node-cron");
 const pool = require("../config/db");
 const { sendDownlink } = require("./ttsApiService");
 
-const POWER_ON_HEX = "64"; // 100%
+const POWER_ON_HEX = "64"; // Default 100%
 const POWER_OFF_HEX = "00";
 
-async function logAction(lightId, action, dimValue) {
+/** Encode brightness level (0-100) as a single hex byte */
+function encodeBrightness(level) {
+  const clamped = Math.max(0, Math.min(100, Math.round(level)));
+  return clamped.toString(16).padStart(2, "0").toUpperCase();
+}
+
+async function getLastBrightnessAndColor(lightId) {
   try {
-    await pool.query(
-      "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES (?, ?, ?)",
-      [lightId, action, dimValue]
+    const [rows] = await pool.query(
+      "SELECT dim_value, color FROM light_action_logs WHERE light_id = ? ORDER BY created_at DESC LIMIT 1",
+      [lightId]
     );
+    if (rows.length > 0) {
+      return {
+        dim_value: (rows[0].dim_value && rows[0].dim_value > 0) ? rows[0].dim_value : 100,
+        color: rows[0].color || "white"
+      };
+    }
+  } catch (err) {
+    console.error(`⚠️ Error fetching last state for light ${lightId}:`, err.message);
+  }
+  return { dim_value: 100, color: "white" }; // Default
+}
+
+const WARM_LIGHT_HEX = "6F";
+const WHITE_LIGHT_HEX = "70";
+
+async function logAction(lightId, action, dimValue, color = null) {
+  try {
+    const [existing] = await pool.query("SELECT id FROM light_action_logs WHERE light_id = ?", [lightId]);
+    if (existing.length > 0) {
+      await pool.query(
+        "UPDATE light_action_logs SET action = ?, dim_value = COALESCE(?, dim_value), color = COALESCE(?, color), created_at = CURRENT_TIMESTAMP WHERE light_id = ?",
+        [action, dimValue, color, lightId]
+      );
+    } else {
+      await pool.query(
+        "INSERT INTO light_action_logs (light_id, action, dim_value, color) VALUES (?, ?, ?, ?)",
+        [lightId, action, dimValue, color]
+      );
+    }
   } catch (err) {
     console.error(`⚠️  Failed to log action for light ${lightId}:`, err.message);
   }
@@ -57,8 +92,22 @@ function initScheduleDispatcher() {
         if (currentTime === startTime) {
           console.log(`⏰ Schedule trigger: ON for ${schedule.device_id} (schedule ${schedule.id})`);
           try {
-            await sendDownlink(schedule.device_id, POWER_ON_HEX, 1);
-            await logAction(schedule.db_light_id, "powerOn", 100);
+            const lastState = await getLastBrightnessAndColor(schedule.db_light_id);
+            const hexPayload = encodeBrightness(lastState.dim_value);
+            
+            // 1. Send Brightness Command
+            await sendDownlink(schedule.device_id, hexPayload, 1);
+            await logAction(schedule.db_light_id, "powerOn", lastState.dim_value, null);
+            console.log(`   -> Powered ON at ${lastState.dim_value}% (Hex: ${hexPayload})`);
+            
+            // 2. Wait 2 seconds and send Color Command to avoid flooding
+            setTimeout(async () => {
+              const colorHex = lastState.color === "warm" ? WARM_LIGHT_HEX : WHITE_LIGHT_HEX;
+              await sendDownlink(schedule.device_id, colorHex, 1);
+              await logAction(schedule.db_light_id, lastState.color === "warm" ? "setWarmLight" : "setWhiteLight", null, lastState.color);
+              console.log(`   -> Set Color to ${lastState.color} (Hex: ${colorHex})`);
+            }, 2000);
+            
           } catch (err) {
             console.error(`❌ Schedule ON failed for ${schedule.device_id}:`, err.message);
           }

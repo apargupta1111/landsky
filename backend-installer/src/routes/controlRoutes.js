@@ -11,7 +11,6 @@
 const express = require("express");
 const router = express.Router();
 const { sendDownlink } = require("../services/ttsApiService");
-const { setColor, getColor, getAllColors } = require("../services/colorStore");
 const { setTargetCommand } = require("../services/commandStore");
 const pool = require("../config/db");
 
@@ -35,7 +34,7 @@ const WHITE_LIGHT_HEX = "70"; // white CCT colour
 /**
  * Log an action to light_action_logs (async, fire-and-forget).
  */
-async function logAction(deviceId, action, dimValue) {
+async function logAction(deviceId, action, dimValue, color = null) {
   try {
     // Look up the light's DB id by name
     const [rows] = await pool.query(
@@ -50,13 +49,13 @@ async function logAction(deviceId, action, dimValue) {
     const [existing] = await pool.query("SELECT id FROM light_action_logs WHERE light_id = ?", [lightId]);
     if (existing.length > 0) {
       await pool.query(
-        "UPDATE light_action_logs SET action = ?, dim_value = ?, created_at = CURRENT_TIMESTAMP WHERE light_id = ?",
-        [action, dimValue, lightId]
+        "UPDATE light_action_logs SET action = ?, dim_value = COALESCE(?, dim_value), color = COALESCE(?, color), created_at = CURRENT_TIMESTAMP WHERE light_id = ?",
+        [action, dimValue, color, lightId]
       );
     } else {
       await pool.query(
-        "INSERT INTO light_action_logs (light_id, action, dim_value) VALUES (?, ?, ?)",
-        [lightId, action, dimValue]
+        "INSERT INTO light_action_logs (light_id, action, dim_value, color) VALUES (?, ?, ?, ?)",
+        [lightId, action, dimValue, color]
       );
     }
   } catch (err) {
@@ -81,6 +80,7 @@ router.post("/control", async (req, res) => {
 
   let hexPayload;
   let dimValue = null;
+  let colorValue = null;
 
   switch (method) {
     case "setDimming":
@@ -105,9 +105,11 @@ router.post("/control", async (req, res) => {
       break;
     case "setWarmLight":
       hexPayload = WARM_LIGHT_HEX;
+      colorValue = "warm";
       break;
     case "setWhiteLight":
       hexPayload = WHITE_LIGHT_HEX;
+      colorValue = "white";
       break;
     default:
       return res.status(400).json({ error: `Unknown method: ${method}` });
@@ -119,14 +121,7 @@ router.post("/control", async (req, res) => {
     console.log(`✅ Downlink sent: ${device_id} → 0x${hexPayload} (${parseInt(hexPayload, 16)}%)`);
 
     // Log the action to the database (fire-and-forget)
-    logAction(device_id, method, dimValue);
-
-    // Persist color state for warm/white commands
-    if (method === "setWarmLight") {
-      setColor(device_id, "warm");
-    } else if (method === "setWhiteLight") {
-      setColor(device_id, "white");
-    }
+    logAction(device_id, method, dimValue, colorValue);
 
     // Persist target for retries — brightness commands track brightness,
     // colour commands track expected led_mode (warm → 'yellow', white → 'white').
@@ -165,24 +160,54 @@ router.post("/control", async (req, res) => {
  * GET /smartlight/color-state
  * Returns the last-known color temperature for ALL devices.
  */
-router.get("/color-state", (req, res) => {
-  res.json(getAllColors());
+router.get("/color-state", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT l.name AS device_id, a.color, a.created_at AS ts 
+      FROM light_action_logs a
+      JOIN lights l ON l.id = a.light_id
+      WHERE a.color IS NOT NULL
+    `);
+    
+    const result = {};
+    rows.forEach(r => {
+      result[r.device_id] = { device_id: r.device_id, color: r.color, ts: new Date(r.ts).getTime() };
+    });
+    res.json(result);
+  } catch (err) {
+    console.error("Failed to fetch color state:", err);
+    res.status(500).json({ error: "Failed to fetch colors" });
+  }
 });
 
 /**
  * GET /smartlight/:deviceId/color-state
  * Returns the last-known color temperature for a specific device.
  */
-router.get("/:deviceId/color-state", (req, res) => {
+router.get("/:deviceId/color-state", async (req, res) => {
   const { deviceId } = req.params;
-  const state = getColor(deviceId);
+  try {
+    const [rows] = await pool.query(`
+      SELECT a.color, a.created_at AS ts 
+      FROM light_action_logs a
+      JOIN lights l ON l.id = a.light_id
+      WHERE l.name = ? AND a.color IS NOT NULL
+      ORDER BY a.created_at DESC LIMIT 1
+    `, [deviceId]);
 
-  if (!state) {
-    // No color command sent yet — default to white
-    return res.json({ device_id: deviceId, color: "white", ts: null });
+    if (rows.length === 0) {
+      return res.json({ device_id: deviceId, color: "white", ts: null });
+    }
+
+    res.json({
+      device_id: deviceId,
+      color: rows[0].color,
+      ts: new Date(rows[0].ts).getTime()
+    });
+  } catch (err) {
+    console.error(`Failed to fetch color for ${deviceId}:`, err);
+    res.status(500).json({ error: "Failed to fetch color" });
   }
-
-  res.json(state);
 });
 
 module.exports = router;

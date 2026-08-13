@@ -129,6 +129,7 @@ CREATE TABLE light_action_logs (
   light_id    INTEGER NOT NULL REFERENCES lights(id) ON DELETE CASCADE,
   action      VARCHAR NOT NULL, -- on | off | dimming | reset
   dim_value   INTEGER NULL,     -- 0-100 for dimming commands
+  color       VARCHAR(20) DEFAULT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
