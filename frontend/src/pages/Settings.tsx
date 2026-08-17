@@ -2,9 +2,12 @@ import { useState } from 'react';
 import {
   Sun, User, Lock, Trash2, Plus,
   Save, AlertTriangle, CheckCircle, Wifi, Bell, Shield,
+  Clock, Send
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { AddLightModal } from '../components/AddLightModal';
+
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
 
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
@@ -62,6 +65,38 @@ export function Settings() {
     if (!confirmReset) { setConfirmReset(true); return; }
     clearTelemetryHistory();
     setConfirmReset(false);
+  };
+
+  const [delayValue, setDelayValue] = useState<number>(20);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const handleBroadcastDelay = async () => {
+    if (delayValue < 20) {
+      alert("Minimum delay allowed is 20 seconds.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to broadcast a ${delayValue} second delay to ALL lights?`)) {
+      return;
+    }
+
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch(`${SERVER_IP}/smartlight/set-delay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delaySeconds: delayValue })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to broadcast delay');
+      
+      alert(data.message || 'Broadcast initiated successfully!');
+    } catch (err: any) {
+      alert(`Error broadcasting delay: ${err.message}`);
+    } finally {
+      setIsBroadcasting(false);
+    }
   };
 
   return (
@@ -160,6 +195,43 @@ export function Settings() {
         >
           <Plus className="w-4 h-4" /> Add New Device
         </button>
+      </SectionCard>
+
+      {/* ── Global Controls ────────────────────────────────────────────────── */}
+      <SectionCard title="Global Light Settings" icon={<Clock className="w-5 h-5" />}>
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-[var(--text-secondary)]">
+            Set a transmission delay parameter for all lights in the network. 
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+                Delay (Seconds)
+              </label>
+              <input
+                type="number"
+                min={20}
+                value={delayValue}
+                onChange={(e) => setDelayValue(Number(e.target.value))}
+                className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-mono"
+              />
+              <p className="text-[10px] text-[var(--text-secondary)] mt-1">Minimum value: 20s (Converted to {delayValue * 1000}ms for transmission)</p>
+            </div>
+            <div className="pt-5">
+              <button
+                onClick={handleBroadcastDelay}
+                disabled={isBroadcasting || delayValue < 20}
+                className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBroadcasting ? (
+                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Broadcasting...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Broadcast to All</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       </SectionCard>
 
       {/* ── Data & Privacy ─────────────────────────────────────────────────── */}

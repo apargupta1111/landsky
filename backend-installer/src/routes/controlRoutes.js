@@ -154,6 +154,64 @@ router.post("/control", async (req, res) => {
   }
 });
 
+/**
+ * POST /smartlight/set-delay
+ * Broadcast a DELAY command to all lights.
+ * Body: { delaySeconds: number }
+ */
+router.post("/set-delay", async (req, res) => {
+  const { delaySeconds } = req.body;
+  
+  const seconds = Number(delaySeconds);
+  if (!seconds || seconds < 2) { // 2s is the absolute hard-minimum, though UI restricts to 20
+    return res.status(400).json({ error: "Invalid delay. Must be at least 2 seconds." });
+  }
+
+  try {
+    const delayMs = seconds * 1000;
+    
+    // Create the ascii string e.g. "DELAY:20000"
+    const asciiPayload = `DELAY:${delayMs}`;
+    // Convert to hex: "44454C41593A3230303030"
+    const hexPayload = Buffer.from(asciiPayload).toString('hex').toUpperCase();
+
+    // Fetch all lights that have a name (TTS device ID)
+    const [lights] = await pool.query("SELECT name FROM lights WHERE name IS NOT NULL AND name != ''");
+
+    if (lights.length === 0) {
+      return res.status(400).json({ error: "No lights found to broadcast to." });
+    }
+
+    console.log(`🌐 Broadcasting DELAY command (Hex: ${hexPayload} for ${delayMs}ms) to ${lights.length} lights...`);
+
+    // Process in the background so API responds quickly
+    (async () => {
+      for (let i = 0; i < lights.length; i++) {
+        const deviceId = lights[i].name;
+        try {
+          await sendDownlink(deviceId, hexPayload, 1);
+          console.log(`   -> Sent DELAY to ${deviceId}`);
+        } catch (err) {
+          console.error(`   -> Failed to send DELAY to ${deviceId}:`, err.message);
+        }
+        
+        // Wait 500ms between lights to prevent TTS rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      console.log(`✅ Broadcast of DELAY command completed.`);
+    })();
+
+    res.json({
+      ok: true,
+      message: `Broadcasting ${asciiPayload} (Hex: ${hexPayload}) to ${lights.length} lights.`,
+      hex: hexPayload
+    });
+  } catch (err) {
+    console.error("❌ Set-Delay broadcast error:", err.message);
+    res.status(500).json({ error: "Failed to initiate broadcast." });
+  }
+});
+
 // ── Color State Endpoints ────────────────────────────────────────────────────
 
 /**
