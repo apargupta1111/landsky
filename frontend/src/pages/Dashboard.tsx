@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus} from 'lucide-react';
 import { KpiCard } from '../components/KpiCard';
 
 import { DeviceCard } from '../components/DeviceCard';
 import { LightsList } from '../components/LightsList';
 import { LightsData } from '../components/LightsData';
 import { AddLightModal } from '../components/AddLightModal';
+import { GlobalScheduleModal } from '../components/GlobalScheduleModal';
 import { BroadcastControlCard } from '../components/BroadcastControlCard';
 import { fetchTelemetry, tlv } from '../services/backendTelemetry';
 import { useAppStore } from '../store/useAppStore';
@@ -13,6 +14,7 @@ import { useAppStore } from '../store/useAppStore';
 export function Dashboard() {
   const [isLightsListOpen,  setIsLightsListOpen]  = useState(false);
   const [isAddLightOpen,    setIsAddLightOpen]    = useState(false);
+  const [isGlobalSchedOpen, setIsGlobalSchedOpen] = useState(false);
   const [activeLight,       setActiveLight]       = useState<any>(null);
 
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
@@ -21,7 +23,7 @@ export function Dashboard() {
   const nagarpalikas   = useAppStore((s) => s.nagarpalikas);
   const wards          = useAppStore((s) => s.wards);
   const gateways       = useAppStore((s) => s.gateways);
-  const lights         = useAppStore((s) => s.lights);
+  const deviceFetchError = useAppStore((s) => s.deviceFetchError);
 
 
   // ── Parallel Telemetry Loading Logic for All Devices ─────────────────────────
@@ -100,26 +102,29 @@ export function Dashboard() {
   const totalNagarpalikas = nagarpalikas.length;
   const totalWards = wards.length;
   const totalGateways = gateways.length;
-  const totalLights   = lights.length;
+  const totalLights   = devices.length;
   const onlineLights  = enrichedDevices.filter((d) => d.status === 'online').length;
   const offlineLights = enrichedDevices.filter((d) => d.status === 'error').length;
   const faultyLights  = enrichedDevices.filter((d) => d.status === 'warning').length;
+  
+  const totalPowerSaved = enrichedDevices.reduce((sum, d) => sum + (d.totalPowerSavedKwh || 0), 0);
+  const co2SavedKg = totalPowerSaved * 0.85; // 0.85 kg CO2 per kWh
+  const treesPlanted = co2SavedKg / 21.77;   // ~21.77 kg CO2 absorbed per tree per year
 
   const handleDeviceClick = (light: any) => setActiveLight(light);
 
   return (
     <>
       {/* ── Live indicator ── */}
-      {(isLoading || lastUpdated || telemetryError) && (
+      {(isLoading || lastUpdated || telemetryError || deviceFetchError) && (
         <div className="flex items-center gap-2 mb-4 text-xs text-[var(--text-secondary)]">
-          {isLoading && <RefreshCw className="w-3 h-3 animate-spin text-primary" />}
+       
           {lastUpdated && !isLoading && (
             <>
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <span>Live — last update {lastUpdated.toLocaleTimeString()}</span>
+            
+             
             </>
           )}
-          {telemetryError && <span className="text-error">{telemetryError}</span>}
         </div>
       )}
 
@@ -162,7 +167,21 @@ export function Dashboard() {
           title="Faulty Lights"
           value={`${faultyLights}`}
         />
-        
+        <KpiCard
+          title="Total Power Saved"
+          value={`${totalPowerSaved.toFixed(2)} kWh`}
+          sub="Energy conserved"
+        />
+        <KpiCard
+          title="CO2 Reduced"
+          value={`${co2SavedKg.toFixed(2)} kg`}
+          sub="Carbon footprint"
+        />
+        <KpiCard
+          title="Equivalent Trees"
+          value={`${treesPlanted.toFixed(1)}`}
+          sub="Trees planted"
+        />
       </div>
       
       
@@ -178,7 +197,13 @@ export function Dashboard() {
               ({devices.length} registered)
             </span>
           </h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button
+              onClick={() => setIsGlobalSchedOpen(true)}
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 dark:bg-primary/20 text-primary border border-primary rounded-lg text-xs md:text-sm font-bold shadow-md hover:bg-primary/20 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Global Schedule
+            </button>
             <button
               onClick={() => setIsAddLightOpen(true)}
               className="px-3 md:px-4 py-1.5 md:py-2 bg-primary text-white border border-primary rounded-lg text-xs md:text-sm font-bold shadow-md hover:brightness-110 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
@@ -206,6 +231,7 @@ export function Dashboard() {
               status={dev.status}
               brightness={dev.brightness}
               power={dev.power}
+              gatewayName={dev.gatewayName}
               onClick={() => handleDeviceClick(dev)}
             />
           ))}
@@ -253,6 +279,12 @@ export function Dashboard() {
       <AddLightModal
         isOpen={isAddLightOpen}
         onClose={() => setIsAddLightOpen(false)}
+      />
+
+      <GlobalScheduleModal
+        isOpen={isGlobalSchedOpen}
+        onClose={() => setIsGlobalSchedOpen(false)}
+        devices={devices}
       />
     </>
   );

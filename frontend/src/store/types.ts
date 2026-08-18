@@ -14,7 +14,10 @@ export interface Device {
   poleNumber?: string;
   connectionStatus?: string;
   faultStatus?: string;
-  lastSeenTime?: string;
+  totalPowerSavedKwh?: number;
+  gatewayId?: number;
+  gatewayEui?: string;
+  gatewayName?: string;
 }
 
 export interface District {
@@ -148,4 +151,5 @@ export type Page =
   | 'faults'
   | 'organization'
   | 'projectDetails'
-  | 'gatewayDetails';
+  | 'gatewayDetails'
+  | 'team';

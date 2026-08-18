@@ -129,6 +129,7 @@ CREATE TABLE light_action_logs (
   light_id    INTEGER NOT NULL REFERENCES lights(id) ON DELETE CASCADE,
   action      VARCHAR NOT NULL, -- on | off | dimming | reset
   dim_value   INTEGER NULL,     -- 0-100 for dimming commands
+  color       VARCHAR(20) DEFAULT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -167,7 +168,8 @@ CREATE TABLE light_status (
   output_current_mA     INTEGER,
   output_voltage_V      INTEGER,
   power_factor          DECIMAL(4,2),
-  relay_state           VARCHAR
+  relay_state           VARCHAR,
+  total_power_saved_kwh DECIMAL(10,4) DEFAULT 0.0000
 );
 
 -- -----------------------------------------

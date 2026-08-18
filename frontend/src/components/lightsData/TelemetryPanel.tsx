@@ -4,11 +4,16 @@ import { tlv } from '../../hooks/useTelemetry';
 
 interface TelemetryPanelProps {
   telemetry: TelemetryData | null;
+  totalPowerSavedKwh?: number;
 }
 
-export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
+export function TelemetryPanel({ telemetry, totalPowerSavedKwh = 0 }: TelemetryPanelProps) {
+  const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
+  const isOn = brightness > 0;
+  const fadeClass = !isOn ? 'opacity-50 grayscale-[20%] transition-all' : 'transition-all';
+
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${fadeClass}`}>
       {/* Output + Input panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="glass-panel p-6 rounded-xl border">
@@ -39,7 +44,8 @@ export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
       </div>
 
       {/* Env & Time databoxes */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <DataBox icon={<Zap className="w-4 h-4 text-green-400" />}     title="Power Saved"    value={totalPowerSavedKwh.toFixed(2)}           unit="kWh" />
         <DataBox icon={<Thermometer className="w-4 h-4" />}            title="Internal Temp"  value={tlv(telemetry, 'internal_temp_C')}       unit="°C"  />
         <DataBox icon={<Thermometer className="w-4 h-4 text-secondary" />} title="Power Factor" value={tlv(telemetry, 'power_factor')}         unit=""    />
         <DataBox icon={<Clock className="w-4 h-4" />}                  title="Lamp-On Time"   value={tlv(telemetry, 'lamp_on_time_hours')}    unit="hrs" />

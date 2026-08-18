@@ -9,12 +9,14 @@ import { GatewayDetails } from './pages/GatewayDetails';
 import { Analytics } from './pages/Analytics';
 import { Faults } from './pages/Faults';
 import { Organization } from './pages/Organization';
+import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { useTheme } from './hooks/useTheme';
 import { useAppStore } from './store/useAppStore';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function App() {
   useTheme();
@@ -22,6 +24,8 @@ function App() {
   const currentPage     = useAppStore((s) => s.currentPage);
   const fetchDevices    = useAppStore((s) => s.fetchDevices);
   const fetchGateways   = useAppStore((s) => s.fetchGateways);
+  
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,7 +42,12 @@ function App() {
     }
   }, [isAuthenticated, fetchDevices, fetchGateways]);
 
-  if (!isAuthenticated) return <Login />
+  if (!isAuthenticated) {
+    if (authMode === 'register') {
+      return <Register onGoToLogin={() => setAuthMode('login')} />;
+    }
+    return <Login onGoToRegister={() => setAuthMode('register')} />;
+  }
 
   return (
     <MainLayout>
@@ -52,6 +61,7 @@ function App() {
       {currentPage === 'analytics' && <Analytics />}
       {currentPage === 'faults' && <Faults />}
       {currentPage === 'organization' && <Organization />}
+      {currentPage === 'team' && <Team />}
       {currentPage === 'settings'  && <Settings />}
     </MainLayout>
   );

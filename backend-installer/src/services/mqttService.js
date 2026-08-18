@@ -11,7 +11,7 @@
  */
 
 const mqtt = require("mqtt");
-const { updateTelemetry } = require("./telemetryStore");
+const { updateTelemetry, getTelemetry } = require("./telemetryStore");
 const { getTargetCommand, clearTargetCommand, incrementRetry } = require("./commandStore");
 const { sendDownlink } = require("./ttsApiService");
 const pool = require("../config/db");
@@ -92,13 +92,52 @@ function initMqttClient() {
 
       console.log(`📨 Telemetry [${deviceId}]:`, JSON.stringify(telemetryData).slice(0, 120));
 
-      // 1. Update in-memory store (fast reads)
-      updateTelemetry(deviceId, telemetryData);
+      // Check if this is a partial Ack payload (e.g. just brightness) rather than full telemetry
+      // Full telemetry should have input_voltage_V or operating_time_hours
+      const isFullTelemetry = telemetryData.input_voltage_V !== null && telemetryData.input_voltage_V !== undefined 
+                           || telemetryData.operating_time_hours !== null && telemetryData.operating_time_hours !== undefined;
 
-      // 2. Persist to database (async, don't block MQTT processing)
-      persistTelemetryToDb(deviceId, telemetryData).catch((err) =>
-        console.error(`❌ DB persist error for ${deviceId}:`, err.message)
-      );
+      if (isFullTelemetry) {
+        // 1. Update in-memory store (fast reads)
+        updateTelemetry(deviceId, telemetryData);
+
+        // 2. Persist to database
+        persistTelemetryToDb(deviceId, telemetryData).catch((err) =>
+          console.error(`❌ DB persist error for ${deviceId}:`, err.message)
+        );
+      } else {
+        // It's a partial ACK payload (just brightness).
+        // The user specifically wants to only update the UI if the light toggles ON/OFF (i.e. x or y is 0).
+        const currentTelemetry = getTelemetry(deviceId);
+        if (currentTelemetry && telemetryData.brightness_percent !== undefined) {
+          const oldBrightness = currentTelemetry.brightness_percent || 0;
+          const newBrightness = telemetryData.brightness_percent || 0;
+          
+          if (oldBrightness === 0 || newBrightness === 0) {
+            try {
+              const [lRows] = await pool.query("SELECT id FROM lights WHERE name = ?", [deviceId]);
+              if (lRows.length > 0) {
+                const [logRows] = await pool.query("SELECT dim_value FROM light_action_logs WHERE light_id = ? ORDER BY created_at DESC LIMIT 1", [lRows[0].id]);
+                if (logRows.length > 0) {
+                  const expected = logRows[0].dim_value;
+                  if (Math.abs(newBrightness - expected) <= 2) {
+                    // Toggling ON or OFF: update the store to trigger the UI change, keeping existing fields
+                    const merged = { ...currentTelemetry, brightness_percent: newBrightness };
+                    updateTelemetry(deviceId, merged);
+                    console.log(`⚡ Ack payload toggled power for ${deviceId} (matched log ${expected}% -> ${newBrightness}%). UI updated.`);
+                  } else {
+                    console.log(`⚡ Ack payload for ${deviceId} (${newBrightness}%) ignored for UI, expected log (${expected}%).`);
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`❌ DB error checking action logs for ${deviceId}:`, err.message);
+            }
+          } else {
+            console.log(`⚡ Ack payload for ${deviceId} (${oldBrightness}% -> ${newBrightness}%) ignored for UI to prevent slider bounce.`);
+          }
+        }
+      }
 
       // ── Command verification & retry ────────────────────────────────────────
       const target = getTargetCommand(deviceId);
@@ -179,6 +218,37 @@ async function persistTelemetryToDb(deviceId, data) {
 
   const lightId = lightRows[0].id;
 
+  // Calculate total power saved based on operating_time_hours delta
+  let newTotalSavedKwh = 0.0;
+  try {
+    const [statusRows] = await pool.query(
+      "SELECT operating_time_hours, brightness_percent, total_power_saved_kwh FROM light_status WHERE light_id = ?",
+      [lightId]
+    );
+
+    if (statusRows.length > 0 && data.operating_time_hours !== undefined && data.operating_time_hours !== null) {
+      const oldOpTime = statusRows[0].operating_time_hours || 0;
+      const newOpTime = data.operating_time_hours;
+      const currentSaved = parseFloat(statusRows[0].total_power_saved_kwh) || 0.0;
+
+      if (newOpTime > oldOpTime) {
+        const deltaHours = newOpTime - oldOpTime;
+        const oldBrightness = statusRows[0].brightness_percent || 0;
+        
+        // Assume 100W light max power
+        const maxPowerW = 100.0;
+        const powerSavedW = maxPowerW * (1.0 - (oldBrightness / 100.0));
+        const energySavedKwh = (powerSavedW * deltaHours) / 1000.0;
+        
+        newTotalSavedKwh = currentSaved + energySavedKwh;
+      } else {
+        newTotalSavedKwh = currentSaved;
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error calculating power saved:", err.message);
+  }
+
   // UPSERT light_status
   await pool.query(`
     INSERT INTO light_status (
@@ -186,8 +256,8 @@ async function persistTelemetryToDb(deviceId, data) {
       input_current_mA, input_frequency_Hz, input_power_W, input_voltage_V,
       internal_temp_C, lamp_on_time_hours, led_mode, led_power_W,
       operating_time_hours, output_current_mA, output_voltage_V,
-      power_factor, relay_state
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      power_factor, relay_state, total_power_saved_kwh
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       brightness_percent    = COALESCE(VALUES(brightness_percent), light_status.brightness_percent),
       fault_status          = COALESCE(VALUES(fault_status), light_status.fault_status),
@@ -203,7 +273,8 @@ async function persistTelemetryToDb(deviceId, data) {
       output_current_mA     = COALESCE(VALUES(output_current_mA), light_status.output_current_mA),
       output_voltage_V      = COALESCE(VALUES(output_voltage_V), light_status.output_voltage_V),
       power_factor          = COALESCE(VALUES(power_factor), light_status.power_factor),
-      relay_state           = COALESCE(VALUES(relay_state), light_status.relay_state)
+      relay_state           = COALESCE(VALUES(relay_state), light_status.relay_state),
+      total_power_saved_kwh = VALUES(total_power_saved_kwh)
   `, [
     lightId,
     data.brightness_percent ?? null,
@@ -221,6 +292,7 @@ async function persistTelemetryToDb(deviceId, data) {
     data.output_voltage_V ?? null,
     data.power_factor ?? null,
     data.relay_state ?? null,
+    newTotalSavedKwh
   ]);
 
   // Update lights table
@@ -308,6 +380,14 @@ function parseDecodedPayload(decoded) {
 function parseRawPayload(base64Str) {
   try {
     const buf = Buffer.from(base64Str, "base64");
+    
+    // Support 1-byte Acknowledgement payload (just brightness)
+    if (buf.length === 1) {
+      return {
+        brightness_percent: 2* buf[0] / 2, // 0-200 -> 0-100%
+      };
+    }
+
     if (buf.length < 10) {
       return { raw: base64Str, parseError: "Payload too short" };
     }

@@ -21,7 +21,7 @@ const SALT_ROUNDS = 10;
 
 function generateAccessToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, parent_id: user.parent_id },
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
@@ -34,52 +34,41 @@ function generateRefreshToken() {
 // ── POST /api/auth/register ──────────────────────────────────────────────────
 
 router.post("/register", async (req, res) => {
-  const { email, password, username, first_name, last_name, phone, role } = req.body;
+  const { email, password, username, first_name, last_name, phone, role, parent_email } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: "email and password are required" });
   }
 
+  const userRole = role || "user";
+
+  if ((userRole === "installer" || parent_email) && !parent_email) {
+    return res.status(400).json({ error: "Primary Client Email is required for installers or sub-users" });
+  }
+
   try {
-    // Check if user already exists
-    const [existing] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
-    if (existing.length > 0) {
+    // Check if user already exists in users or pending_accounts
+    const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (existingUsers.length > 0) {
       return res.status(409).json({ error: "Email already registered" });
+    }
+    
+    const [existingPending] = await pool.query("SELECT id FROM pending_accounts WHERE email = ?", [email]);
+    if (existingPending.length > 0) {
+      return res.status(409).json({ error: "An account request with this email is already pending" });
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const userRole = role || "user";
 
-    // Insert new user
-    const [insertResult] = await pool.query(
-      `INSERT INTO users (email, password, username, first_name, last_name, phone, role)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [email, hashedPassword, username || null, first_name || null, last_name || null, phone || null, userRole]
-    );
-
-    // Fetch the newly created user (since MySQL doesn't support RETURNING)
-    const [newUserRows] = await pool.query(
-      "SELECT id, email, username, first_name, last_name, role, created_at FROM users WHERE id = ?",
-      [insertResult.insertId]
-    );
-    const user = newUserRows[0];
-
-    const accessToken = generateAccessToken(user);
-
-    // Create refresh token
-    const rawRefreshToken = generateRefreshToken();
-    const refreshHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex");
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-
+    // Insert into pending_accounts
     await pool.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
-      [user.id, refreshHash, expiresAt]
+      `INSERT INTO pending_accounts (email, password, username, first_name, last_name, phone, role, parent_email)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [email, hashedPassword, username || null, first_name || null, last_name || null, phone || null, userRole, parent_email || null]
     );
 
     res.status(201).json({
-      user,
-      access_token: accessToken,
-      refresh_token: rawRefreshToken,
+      message: "Registration request sent successfully. Pending approval.",
     });
   } catch (err) {
     console.error("❌ Register error:", err.message);
@@ -101,7 +90,7 @@ router.post("/login", async (req, res) => {
   try {
     // Note: Passed `identifier` twice because of the two `?` placeholders
     const [rows] = await pool.query(
-      "SELECT id, email, password, username, first_name, last_name, role FROM users WHERE email = ? OR username = ?",
+      "SELECT id, email, password, username, first_name, last_name, role, parent_id FROM users WHERE email = ? OR username = ?",
       [identifier, identifier]
     );
 
@@ -156,7 +145,7 @@ router.post("/refresh", async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT rt.id, rt.user_id, rt.expires_at, rt.revoked_at,
-              u.email, u.role, u.username, u.first_name, u.last_name
+              u.email, u.role, u.username, u.first_name, u.last_name, u.parent_id
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.deleted_at IS NULL`,
@@ -183,7 +172,7 @@ router.post("/refresh", async (req, res) => {
     );
 
     // Issue new tokens
-    const user = { id: row.user_id, email: row.email, role: row.role };
+    const user = { id: row.user_id, email: row.email, role: row.role, parent_id: row.parent_id };
     const newAccessToken = generateAccessToken(user);
 
     const newRawRefresh = generateRefreshToken();
@@ -234,7 +223,7 @@ router.post("/logout", async (req, res) => {
 router.get("/me", authenticate, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users WHERE id = ?",
+      "SELECT id, email, phone, username, first_name, last_name, role, parent_id, created_at, updated_at FROM users WHERE id = ?",
       [req.user.id]
     );
 

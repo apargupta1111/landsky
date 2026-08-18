@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, Search } from 'lucide-react';
+import { ChevronLeft, Search, Clock, Zap } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { LightsData } from '../components/LightsData';
 
@@ -7,13 +7,15 @@ export function GatewayDetails() {
   const selectedGatewayId = useAppStore((s) => s.selectedGatewayId);
   const gateways = useAppStore((s) => s.gateways);
   const districts = useAppStore((s) => s.districts);
-  const lights = useAppStore((s) => s.lights);
+  const devices = useAppStore((s) => s.devices);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const setSelectedGatewayId = useAppStore((s) => s.setSelectedGatewayId);
 
   const gateway = gateways.find((item) => item.id === selectedGatewayId);
   const district = districts.find((d) => d.id === gateway?.districtId);
-  const gatewayLights = lights.filter((light) => light.gatewayId === selectedGatewayId);
+  
+  // Use gatewayEui for matching
+  const gatewayLights = devices.filter((dev) => dev.gatewayEui && String(dev.gatewayEui) === String(selectedGatewayId));
 
   const [query, setQuery] = useState('');
   const [activeLight, setActiveLight] = useState<any>(null);
@@ -21,10 +23,9 @@ export function GatewayDetails() {
   const filteredLights = useMemo(
     () => gatewayLights.filter((light) =>
       light.id.toLowerCase().includes(query.toLowerCase()) ||
-      light.name.toLowerCase().includes(query.toLowerCase()) ||
-      light.status.toLowerCase().includes(query.toLowerCase())
+      light.name.toLowerCase().includes(query.toLowerCase())
     ),
-    [gatewayLights, query],
+    [gatewayLights, query]
   );
 
   if (!gateway) {
@@ -97,22 +98,28 @@ export function GatewayDetails() {
                     <p className="text-sm text-[var(--text-secondary)]">{light.name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    light.status === 'Online' ? 'bg-primary/10 text-primary border-primary/30'
-                    : light.status === 'Warning' ? 'bg-warning/20 text-warning border-warning/50'
-                    : 'bg-error/20 text-error border-error/50'
-                  }`}>
-                    {light.status}
+                    light.connectionStatus === 'on' ? 'bg-primary/10 text-primary border-primary/30'
+                    : light.connectionStatus === 'off' ? 'bg-error/10 text-error border-error/30'
+                    : 'bg-warning/10 text-warning border-warning/30'
+                  } border`}>
+                    {light.connectionStatus === 'on' ? 'Online' : light.connectionStatus === 'off' ? 'Offline' : 'Warning'}
                   </span>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-[var(--panel-border)]">
-                    <div className="text-[var(--text-secondary)]">Brightness</div>
-                    <div className="mt-2 text-lg font-semibold data-font">{light.brightness}%</div>
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5" /> Power Saved
+                    </div>
+                    <div className="text-lg font-bold data-font">{light.totalPowerSavedKwh ?? 0} <span className="text-xs">kWh</span></div>
                   </div>
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-[var(--panel-border)]">
-                    <div className="text-[var(--text-secondary)]">Power</div>
-                    <div className="mt-2 text-lg font-semibold data-font">{light.power} W</div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" /> Added
+                    </div>
+                    <div className="text-sm font-bold truncate">
+                      {light.addedAt ? new Date(light.addedAt).toLocaleDateString() : 'N/A'}
+                    </div>
                   </div>
                 </div>
               </button>
@@ -121,11 +128,20 @@ export function GatewayDetails() {
         </div>
       </div>
 
-      <LightsData
-        light={activeLight}
-        isOpen={!!activeLight}
-        onClose={() => setActiveLight(null)}
-      />
+      {activeLight && (
+        <LightsData
+          isOpen={true}
+          light={{
+            id: activeLight.id,
+            name: activeLight.name,
+            status: activeLight.connectionStatus === 'on' ? 'online' : activeLight.connectionStatus === 'off' ? 'error' : 'warning',
+            ttsDeviceId: activeLight.ttsDeviceId,
+            dbId: activeLight.dbId,
+            totalPowerSavedKwh: activeLight.totalPowerSavedKwh
+          }}
+          onClose={() => setActiveLight(null)}
+        />
+      )}
     </div>
   );
 }

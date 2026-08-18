@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Wifi, Tag, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { useEffect } from 'react';
 import type { Device } from '../store/types';
 
 interface AddLightModalProps {
@@ -40,18 +41,26 @@ function Field({
 
 export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
   const addDevice = useAppStore((s) => s.addDevice);
-  
+  const gateways = useAppStore((s) => s.gateways);
+  const fetchGateways = useAppStore((s) => s.fetchGateways);
+
+  useEffect(() => {
+    if (isOpen && gateways.length === 0) {
+      fetchGateways();
+    }
+  }, [isOpen]);
 
   const [name,         setName]         = useState('');
   const [serialNumber, setSerialNumber] = useState('');
   const [lat,          setLat]          = useState('');
   const [lng,          setLng]          = useState('');
+  const [gatewayId,    setGatewayId]    = useState('');
   const [ttsDeviceId, setTtsDeviceId] = useState('');
   const [error,       setError]       = useState('');
   const [success,     setSuccess]     = useState(false);
 
   const reset = () => {
-    setName(''); setSerialNumber(''); setLat(''); setLng('');
+    setName(''); setSerialNumber(''); setLat(''); setLng(''); setGatewayId('');
     setTtsDeviceId(''); setError(''); setSuccess(false);
   };
 
@@ -87,6 +96,7 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
           serial_number: serialNumber.trim(),
           latitude: latNum,
           longitude: lngNum,
+          gateway_id: gatewayId ? parseInt(gatewayId) : null,
         }),
       });
 
@@ -105,6 +115,8 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
         lng: lngNum,
         ttsDeviceId: created.name,
         addedAt: new Date().toISOString(),
+        gatewayId: created.gateway_id,
+        gatewayName: created.gateway_name,
       };
 
       addDevice(device);
@@ -158,6 +170,28 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
               <div className="grid grid-cols-2 gap-4">
                 <Field id="al-lat" label="Latitude"  icon={<Hash className="w-4 h-4"/>} placeholder="e.g. 28.4859" value={lat} onChange={setLat} type="number" />
                 <Field id="al-lng" label="Longitude" icon={<Hash className="w-4 h-4"/>} placeholder="e.g. 77.5342" value={lng} onChange={setLng} type="number" />
+              </div>
+
+              <div>
+                <label htmlFor="al-gateway" className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-1.5">
+                  Gateway (Optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">
+                    <Wifi className="w-4 h-4"/>
+                  </span>
+                  <select
+                    id="al-gateway"
+                    value={gatewayId}
+                    onChange={(e) => setGatewayId(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] focus:border-primary focus:outline-none text-sm text-[var(--text-primary)] transition-colors appearance-none"
+                  >
+                    <option value="">-- No Gateway (Standalone) --</option>
+                    {gateways.map(g => (
+                      <option key={g.id} value={g.id}>{g.name} ({g.eui})</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <p className="text-xs text-[var(--text-secondary)] bg-black/5 dark:bg-white/5 rounded-lg px-3 py-2 border border-[var(--panel-border)]">

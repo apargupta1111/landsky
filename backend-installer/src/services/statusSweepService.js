@@ -55,8 +55,7 @@ function initStatusSweep() {
   
   // Run immediately on startup
   sweepOfflineDevices();
-  
-  // Then run periodically
+   // Then run periodically
   sweepInterval = setInterval(sweepOfflineDevices, SWEEP_INTERVAL_MS);
 }
 

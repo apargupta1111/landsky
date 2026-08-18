@@ -18,6 +18,7 @@ export function useSchedule(lightId: string) {
           offTime: s.stop_time.substring(0, 5),
           repeat: s.is_periodic,
           days: Array.isArray(s.days_of_week) ? s.days_of_week : (typeof s.days_of_week === 'string' ? JSON.parse(s.days_of_week) : []),
+          brightness: s.brightness !== undefined && s.brightness !== null ? s.brightness : 100,
           isActive: !!s.is_active,
           createdAt: s.created_at,
         }));
@@ -37,6 +38,7 @@ export function useSchedule(lightId: string) {
   const [offTime, setOffTime] = useState('06:00');
   const [repeat,  setRepeat]  = useState<Schedule['repeat']>('daily');
   const [days,    setDays]    = useState<number[]>([1, 2, 3, 4, 5]);
+  const [brightness, setBrightness] = useState<number>(100);
   const [saved,   setSaved]   = useState(false);
 
   const lightSchedules = schedules;
@@ -49,6 +51,7 @@ export function useSchedule(lightId: string) {
         start_time: onTime + ':00',
         stop_time: offTime + ':00',
         days_of_week: repeat === 'custom' ? days : [],
+        brightness: brightness,
         is_active: true
       };
       const res = await fetch(`${ENDPOINTS.backend.base}/api/schedules`, {
@@ -102,8 +105,7 @@ export function useSchedule(lightId: string) {
     offTime, setOffTime,
     repeat, setRepeat,
     days, toggleDay,
-    saved,
-    // actions
-    add, toggle, remove,
+    brightness, setBrightness,
+    saved, add, toggle, remove
   };
 }

@@ -1,4 +1,5 @@
 import type { Device } from './types';
+import { fetchWithAuth } from '../utils/api';
 
 // Get Server IP from environment variable
 const SERVER_IP = import.meta.env.VITE_SERVER_IP;
@@ -11,7 +12,7 @@ export const createDeviceSlice = (set: any, get: any) => ({
   fetchDevices: async () => {
     set({ isLoadingDevices: true, deviceFetchError: null });
     try {
-      const response = await fetch(`${SERVER_IP}/api/devices`);
+      const response = await fetchWithAuth(`${SERVER_IP}/api/devices`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP Error Status: ${response.status}`);
       }
@@ -20,7 +21,7 @@ export const createDeviceSlice = (set: any, get: any) => ({
       if (!Array.isArray(items)) throw new Error('Unexpected API payload shape for devices');
 
       // The backend returns formatted devices matching the Device interface
-      set({ devices: items, isLoadingDevices: false });
+      set({ devices: items, isLoadingDevices: false, deviceFetchError: `DEBUG_SUCCESS: fetched ${items.length} devices.` });
     } catch (error: any) {
       set({
         deviceFetchError: error.message || 'error retrieving devices',

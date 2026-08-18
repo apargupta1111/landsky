@@ -87,11 +87,12 @@ CREATE INDEX idx_schedules_light_is_active ON schedules (light, is_active);
 -- -----------------------------------------
 -- ACTION LOGS
 -- -----------------------------------------
-CREATE TABLE light_action_logs (
+CREATE TABLE IF NOT EXISTS light_action_logs (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   light_id    INT NOT NULL,
-  action      VARCHAR(255) NOT NULL,
-  dim_value   INT NULL,
+  action      VARCHAR(50) NOT NULL,
+  dim_value   INT DEFAULT NULL,
+  color       VARCHAR(20) DEFAULT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (light_id) REFERENCES lights(id) ON DELETE CASCADE
 );
@@ -133,6 +134,7 @@ CREATE TABLE light_status (
   output_voltage_V      INT,
   power_factor          DECIMAL(4,2),
   relay_state           VARCHAR(255),
+  total_power_saved_kwh DECIMAL(10,4) DEFAULT 0.0000,
   FOREIGN KEY (light_id) REFERENCES lights(id) ON DELETE CASCADE
 );
 

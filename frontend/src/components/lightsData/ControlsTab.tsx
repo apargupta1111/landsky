@@ -69,6 +69,8 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
   };
 
   const disabled = ctrl.status === 'sending';
+  const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
+  const isOn = brightness > 0;
 
   return (
     <div className="glass-panel p-6 rounded-xl border">
@@ -89,13 +91,14 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
           <input
             type="range" min="0" max="100" value={dimLevel}
             onChange={(e) => setDimLevel(Number(e.target.value))}
-            className="w-full h-2 rounded-lg cursor-pointer accent-primary"
+            className={`w-full h-2 rounded-lg accent-primary ${!isOn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+            disabled={!isOn}
           />
           <div className="flex justify-between mt-2">
             <div className="text-xs text-[var(--text-secondary)]">{dimLevel}% brightness</div>
             <button
               onClick={handleApplyDimming}
-              disabled={disabled}
+              disabled={disabled || !isOn}
               className="px-3 py-1 text-xs bg-primary/20 text-primary border border-primary/50 rounded-lg hover:bg-primary/30 disabled:opacity-40 transition-colors"
             >
               Apply
@@ -105,13 +108,11 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
 
         {/* Quick Power */}
         {(() => {
-          const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
-          const isOn = brightness > 0;
 
           return (
             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--panel-border)]">
               <button
-                onClick={() => ctrl.powerOn()}
+                onClick={() => ctrl.setDimmingLevel(dimLevel > 0 ? dimLevel : 100)}
                 disabled={disabled || isOn}
                 className={`py-2.5 rounded-lg text-sm font-bold transition-colors ${
                   !isOn

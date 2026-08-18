@@ -1,4 +1,5 @@
 import type { Gateway, TelemetrySnapshot, ApiGatewayItem } from './types';
+import { fetchWithAuth } from '../utils/api';
 
 // Get Serer IP from environment variable
 const SERVER_IP = import.meta.env.VITE_SERVER_IP;
@@ -17,8 +18,8 @@ export const createGatewaySlice = (set: any) => ({
       console.log("fetchGateways called");
       console.log("SERVER_IP", SERVER_IP);
   
-console.log("URL:", `${SERVER_IP}/api/gateways`);
-      const response = await fetch(`${SERVER_IP}/api/gateways`);
+      console.log("URL:", `${SERVER_IP}/api/gateways`);
+      const response = await fetchWithAuth(`${SERVER_IP}/api/gateways`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP Error Status: ${response.status}`);
       }
@@ -43,7 +44,7 @@ console.log("URL:", `${SERVER_IP}/api/gateways`);
         installedBy: Number(item.installedBy ?? 0),
         createdAt: item.createdAt ?? '',
         updatedAt: item.updatedAt ?? '',
-        id: item.eui ?? '',
+        id: String(item.id || item.eui || ''),
         projectId: String(item.tenantId ?? ''),
         connectedLights: Number(item.connectedLights ?? 0),
         onlineLights: Number(item.onlineLights ?? 0),

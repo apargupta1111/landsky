@@ -11,6 +11,7 @@ const getAllLights = async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT l.*,
+             g.name AS gateway_name,
              ls.brightness_percent,
              ls.fault_status    AS status_fault,
              ls.input_current_mA,
@@ -26,9 +27,11 @@ const getAllLights = async (req, res) => {
              ls.output_current_mA,
              ls.output_voltage_V,
              ls.power_factor,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
+      LEFT JOIN gateways g ON l.gateway_id = g.id
       ORDER BY l.id
     `);
 
@@ -45,6 +48,7 @@ const getLightById = async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT l.*,
+             g.name AS gateway_name,
              ls.brightness_percent,
              ls.fault_status    AS status_fault,
              ls.input_current_mA,
@@ -60,9 +64,11 @@ const getLightById = async (req, res) => {
              ls.output_current_mA,
              ls.output_voltage_V,
              ls.power_factor,
-             ls.relay_state
+             ls.relay_state,
+             ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
+      LEFT JOIN gateways g ON l.gateway_id = g.id
       WHERE l.id = ?
     `, [req.params.id]);
 
@@ -82,7 +88,7 @@ const getLightById = async (req, res) => {
 const createLight = async (req, res) => {
   const {
     name, serial_number, pole_number,
-    latitude, longitude, installer, user_id,
+    latitude, longitude, installer, user_id, gateway_id
   } = req.body;
 
   if (!serial_number || latitude === undefined || longitude === undefined) {
@@ -96,8 +102,8 @@ const createLight = async (req, res) => {
     // MySQL doesn't support RETURNING, so we grab the insertId and SELECT it
     const normalizedName = name ? name.toLowerCase() : null;
     const [result] = await pool.query(`
-      INSERT INTO lights (name, serial_number, pole_number, latitude, longitude, installer, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lights (name, serial_number, pole_number, latitude, longitude, installer, user_id, gateway_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       normalizedName,
       serial_number,
@@ -106,6 +112,7 @@ const createLight = async (req, res) => {
       longitude,
       installerId,
       userId,
+      gateway_id || null,
     ]);
 
     const [newLight] = await pool.query("SELECT * FROM lights WHERE id = ?", [result.insertId]);
@@ -123,7 +130,7 @@ const createLight = async (req, res) => {
 // ── PUT update light ─────────────────────────────────────────────────────────
 
 const updateLight = async (req, res) => {
-  const { name, serial_number, pole_number, latitude, longitude, connection_status, fault_status } = req.body;
+  const { name, serial_number, pole_number, latitude, longitude, connection_status, fault_status, gateway_id } = req.body;
 
   try {
     const fields = [];
@@ -136,6 +143,7 @@ const updateLight = async (req, res) => {
     if (longitude !== undefined) { fields.push(`longitude = ?`); values.push(longitude); }
     if (connection_status !== undefined) { fields.push(`connection_status = ?`); values.push(connection_status); }
     if (fault_status !== undefined) { fields.push(`fault_status = ?`); values.push(fault_status); }
+    if (gateway_id !== undefined) { fields.push(`gateway_id = ?`); values.push(gateway_id === "" ? null : gateway_id); }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
