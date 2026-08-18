@@ -64,10 +64,11 @@ function initScheduleDispatcher() {
       const currentDay = now.getDay(); // 0 (Sunday) to 6 (Saturday)
 
       const [schedules] = await pool.query(`
-        SELECT s.*, l.name AS device_id, l.id AS db_light_id
+        SELECT s.id, s.light as db_light_id, s.start_time, s.stop_time, 
+               s.days_of_week, s.is_active, s.brightness, l.name AS device_id
         FROM schedules s
         JOIN lights l ON s.light = l.id
-        WHERE s.is_active = 1 AND s.deleted_at IS NULL
+        WHERE s.deleted_at IS NULL AND s.is_active = 1
       `);
 
       for (const schedule of schedules) {
@@ -93,12 +94,13 @@ function initScheduleDispatcher() {
           console.log(`⏰ Schedule trigger: ON for ${schedule.device_id} (schedule ${schedule.id})`);
           try {
             const lastState = await getLastBrightnessAndColor(schedule.db_light_id);
-            const hexPayload = encodeBrightness(lastState.dim_value);
-            
+            const targetBrightness = schedule.brightness !== null ? schedule.brightness : lastState.dim_value;
+            const hexPayload = encodeBrightness(targetBrightness);
+
             // 1. Send Brightness Command
             await sendDownlink(schedule.device_id, hexPayload, 1);
-            await logAction(schedule.db_light_id, "powerOn", lastState.dim_value, null);
-            console.log(`   -> Powered ON at ${lastState.dim_value}% (Hex: ${hexPayload})`);
+            await logAction(schedule.db_light_id, "powerOn", targetBrightness, null);
+            console.log(`   -> Powered ON at ${targetBrightness}% (Hex: ${hexPayload})`);
             
             // 2. Wait 2 seconds and send Color Command to avoid flooding
             setTimeout(async () => {

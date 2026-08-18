@@ -5,20 +5,37 @@
 
 const express = require("express");
 const pool = require("../config/db");
+const { authenticate, authorize } = require("../middleware/auth");
 
 const router = express.Router();
+
+router.use(authenticate);
 
 // ── GET /api/gateways ────────────────────────────────────────────────────────
 
 router.get("/", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    let query = `
       SELECT g.*,
              u.username AS installed_by_name
       FROM gateways g
       LEFT JOIN users u ON u.id = g.installed_by
-      ORDER BY g.id
-    `);
+    `;
+    const values = [];
+
+    if (req.user.role !== 'superadmin') {
+      // Find the main organization ID (the Main User)
+      const mainUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
+      
+      // Gateway is visible if it was installed by the Main User, 
+      // or if it was installed by any user whose parent is the Main User (like an installer or subuser)
+      query += ` WHERE g.installed_by = ? OR u.parent_id = ?`;
+      values.push(mainUserId, mainUserId);
+    }
+
+    query += ` ORDER BY g.id`;
+
+    const [rows] = await pool.query(query, values);
 
     // Format for frontend compatibility
     const formatted = rows.map((gw) => ({

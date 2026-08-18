@@ -1,3 +1,4 @@
+import { fetchWithAuth } from '../utils/api';
 import type { District, Nagarpalika, Ward, Fault } from './types';
 
 const DISTRICTS: District[] = [
@@ -43,16 +44,17 @@ export const createProjectSlice = (set: any) => ({
   nagarpalikas: NAGARPALIKAS as Nagarpalika[],
   wards: WARDS as Ward[],
   faults: [] as Fault[],
+  activeFaultCount: 0,
   isLoadingFaults: false,
   fetchFaults: async () => {
     set({ isLoadingFaults: true });
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
-      const res = await fetch(`${SERVER_IP}/api/alerts?status=active`);
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const res = await fetchWithAuth(`${SERVER_IP}/api/alerts?status=active`);
       if (res.ok) {
         const data = await res.json();
         const mappedFaults: Fault[] = data.map((alert: any) => ({
-          id: `F-${alert.id}`,
+          id: `${alert.id}`, // Just use the raw ID so we can resolve it easily
           wardId: 'ward-1', // Mocked or derived from real topology if available
           wardName: 'Unassigned Ward',
           gatewayId: 'Unknown GW',
@@ -63,12 +65,43 @@ export const createProjectSlice = (set: any) => ({
           priority: alert.severity === 'high' ? 'High' : alert.severity === 'medium' ? 'Medium' : 'Low',
           assignedTo: alert.acknowledged_by ? `User ${alert.acknowledged_by}` : 'Unassigned',
         }));
-        set({ faults: mappedFaults });
+        set({ faults: mappedFaults, activeFaultCount: mappedFaults.length });
       }
     } catch (error) {
       console.error('Failed to fetch faults', error);
     } finally {
       set({ isLoadingFaults: false });
+    }
+  },
+  fetchActiveFaultCount: async () => {
+    try {
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const res = await fetchWithAuth(`${SERVER_IP}/api/alerts?status=active`);
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeFaultCount: data.length });
+      }
+    } catch (e) {
+      console.error("Failed to fetch active fault count", e);
+    }
+  },
+  resolveFault: async (id: string) => {
+    try {
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const res = await fetchWithAuth(`${SERVER_IP}/api/alerts/${id}/resolve`, {
+        method: 'PUT',
+      });
+      if (res.ok) {
+        set((state: any) => ({
+          faults: state.faults.filter((f: Fault) => f.id !== id),
+          activeFaultCount: Math.max(0, state.activeFaultCount - 1)
+        }));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Failed to resolve fault", e);
+      return false;
     }
   },
   selectedDistrictId: null as string | null,

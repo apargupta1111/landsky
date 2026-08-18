@@ -4,10 +4,11 @@ interface DeviceCardProps {
   status: 'online' | 'warning' | 'error';
   brightness: number;
   power: number;
+  gatewayName?: string;
   onClick?: () => void;
 }
 
-export function DeviceCard({ id, name, status, brightness, power, onClick }: DeviceCardProps) {
+export function DeviceCard({ id, name, status, brightness, power, gatewayName, onClick }: DeviceCardProps) {
   const statusColors = {
     online: 'var(--accent-primary)',
     warning: 'var(--accent-warning)',
@@ -27,6 +28,11 @@ export function DeviceCard({ id, name, status, brightness, power, onClick }: Dev
         <div>
           <div className="font-bold data-font text-lg">{id}</div>
           <div className="text-xs text-[var(--text-secondary)]">{name}</div>
+          {gatewayName && (
+            <div className="text-[10px] text-[var(--text-secondary)] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+              {gatewayName}
+            </div>
+          )}
         </div>
         <div className="relative flex h-3 w-3">
           {status === 'online' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: color }}></span>}

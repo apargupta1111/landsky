@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Map as MapIcon, Folder, Settings, Menu, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Folder, Settings, Menu, X, AlertCircle, ChevronDown, Users } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { CityMap } from '../components/CityMap';
 
@@ -219,7 +219,7 @@ export function Sidebar() {
         <NavItem icon={<MapIcon        className="w-5 h-5" />} label="Live Map"    active={false}                       sidebarOpen={sidebarOpen} onClick={() => setCityMapOpen(true)} />
         {/* <NavItem icon={<Activity       className="w-5 h-5" />} label="Analytics"   active={currentPage === 'analytics'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('analytics')} /> */}
         <NavItem icon={<AlertCircle    className="w-5 h-5" />} label="Faults"      active={currentPage === 'faults'}    sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('faults')} />
-        {/* <NavItem icon={<Users          className="w-5 h-5" />} label="Organization" active={currentPage === 'organization'} sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('organization')} /> */}
+        <NavItem icon={<Users          className="w-5 h-5" />} label="Team"        active={currentPage === 'team'}      sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('team')} />
         <NavItem icon={<Settings       className="w-5 h-5" />} label="Settings"    active={currentPage === 'settings'}  sidebarOpen={sidebarOpen} onClick={() => setCurrentPage('settings')} />
       </nav>
     </>

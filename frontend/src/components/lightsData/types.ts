@@ -16,6 +16,7 @@ export interface Schedule {
   offTime: string;   // 'HH:mm'
   repeat: 'daily' | 'weekly' | 'custom';
   days: number[];    // 0=Sun … 6=Sat
+  brightness: number;
   isActive: boolean;
   createdAt: string;
 }

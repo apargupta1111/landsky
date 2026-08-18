@@ -21,9 +21,11 @@ export interface AppState {
 
   isAuthenticated: boolean;
   username: string;
+  role: string;
   token: string | null;
   refreshToken: string | null;
   login: (user: string, pass: string) => Promise<boolean>;
+  register: (userData: any) => Promise<boolean>;
   logout: () => void;
 
   devices: Device[];
@@ -46,8 +48,11 @@ export interface AppState {
   setSelectedWardId: (id: string | null) => void;
 
   faults: Fault[];
+  activeFaultCount: number;
   isLoadingFaults: boolean;
   fetchFaults: () => Promise<void>;
+  fetchActiveFaultCount: () => Promise<void>;
+  resolveFault: (id: string) => Promise<boolean>;
 
   gateways: Gateway[];
   selectedGatewayId: string | null;

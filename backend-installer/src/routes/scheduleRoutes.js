@@ -68,7 +68,7 @@ router.get("/:id", async (req, res) => {
 // ── POST /api/schedules ─────────────────────────────────────────────────────
 
 router.post("/", async (req, res) => {
-  const { light, is_periodic, start_time, stop_time, days_of_week, is_active } = req.body;
+  const { light, is_periodic, start_time, stop_time, days_of_week, brightness, is_active } = req.body;
 
   if (!light || !start_time || !stop_time) {
     return res.status(400).json({ error: "light, start_time, and stop_time are required" });
@@ -83,14 +83,15 @@ router.post("/", async (req, res) => {
     }
 
     const [result] = await pool.query(`
-      INSERT INTO schedules (light, is_periodic, start_time, stop_time, days_of_week, is_active)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO schedules (light, is_periodic, start_time, stop_time, days_of_week, brightness, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
       lightDbId,
       is_periodic || "daily",
       start_time,
       stop_time,
       days_of_week ? JSON.stringify(days_of_week) : null,
+      brightness !== undefined ? brightness : 100,
       is_active !== undefined ? is_active : true,
     ]);
 
@@ -105,7 +106,7 @@ router.post("/", async (req, res) => {
 // ── PUT /api/schedules/:id ──────────────────────────────────────────────────
 
 router.put("/:id", async (req, res) => {
-  const { is_periodic, start_time, stop_time, days_of_week, is_active } = req.body;
+  const { is_periodic, start_time, stop_time, days_of_week, brightness, is_active } = req.body;
 
   try {
     const fields = [];
@@ -114,7 +115,8 @@ router.put("/:id", async (req, res) => {
     if (is_periodic !== undefined) { fields.push(`is_periodic = ?`); values.push(is_periodic); }
     if (start_time !== undefined) { fields.push(`start_time = ?`); values.push(start_time); }
     if (stop_time !== undefined) { fields.push(`stop_time = ?`); values.push(stop_time); }
-    if (days_of_week !== undefined) { fields.push(`days_of_week = ?`); values.push(JSON.stringify(days_of_week)); }
+    if (days_of_week !== undefined) { fields.push(`days_of_week = ?`); values.push(days_of_week ? JSON.stringify(days_of_week) : null); }
+    if (brightness !== undefined) { fields.push(`brightness = ?`); values.push(brightness); }
     if (is_active !== undefined) { fields.push(`is_active = ?`); values.push(is_active); }
 
     if (fields.length === 0) {

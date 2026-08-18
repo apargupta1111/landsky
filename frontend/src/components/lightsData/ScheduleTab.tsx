@@ -11,7 +11,7 @@ interface ScheduleTabProps {
 
 export function ScheduleTab({ sched }: ScheduleTabProps) {
   const { lightSchedules, onTime, setOnTime, offTime, setOffTime,
-          repeat, setRepeat, days, toggleDay, saved, add, toggle, remove } = sched;
+          repeat, setRepeat, days, toggleDay, brightness, setBrightness, saved, add, toggle, remove } = sched;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -81,8 +81,21 @@ export function ScheduleTab({ sched }: ScheduleTabProps) {
 
           <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-    
           </p>
+
+          {/* Brightness Slider */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Brightness</label>
+              <span className="text-xs font-bold text-primary">{brightness}%</span>
+            </div>
+            <input 
+              type="range" min="0" max="100" step="5"
+              value={brightness}
+              onChange={(e) => setBrightness(parseInt(e.target.value, 10))}
+              className="w-full h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+          </div>
 
           <button
             onClick={add}
@@ -130,6 +143,9 @@ export function ScheduleTab({ sched }: ScheduleTabProps) {
                   {s.repeat === 'custom' && s.days.map((d) => (
                     <span key={d} className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{DAY_LABELS[d]}</span>
                   ))}
+                  <span className="text-xs text-[#FFC107] bg-[#FFC107]/10 px-2 py-0.5 rounded-full font-bold ml-1">
+                    ☀️ {s.brightness}%
+                  </span>
                 </div>
               </div>
 

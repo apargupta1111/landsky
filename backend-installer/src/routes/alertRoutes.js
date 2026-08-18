@@ -5,8 +5,12 @@
 
 const express = require("express");
 const pool = require("../config/db");
+const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
+
+// Protect all alert routes
+router.use(authenticate);
 
 // ── GET /api/alerts ──────────────────────────────────────────────────────────
 
@@ -21,6 +25,19 @@ router.get("/", async (req, res) => {
       WHERE 1=1
     `;
     const values = [];
+
+    // Filter by role
+    if (req.user.role !== 'superadmin') {
+      const mainUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
+      
+      if (req.user.role === 'user') {
+        query += ` AND l.user_id = ?`;
+        values.push(mainUserId);
+      } else if (req.user.role === 'installer') {
+        query += ` AND l.installer = ?`;
+        values.push(req.user.id);
+      }
+    }
 
     if (status) {
       query += ` AND a.status = ?`;

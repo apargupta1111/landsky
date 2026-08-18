@@ -13,13 +13,131 @@ const SALT_ROUNDS = 10;
 // All user routes require authentication
 router.use(authenticate);
 
+// ── GET /api/users/pending ───────────────────────────────────────────────────
+
+router.get("/pending", async (req, res) => {
+  try {
+    let query = "SELECT id, email, username, first_name, last_name, phone, role, parent_email, created_at FROM pending_accounts";
+    const values = [];
+
+    if (req.user.role === "superadmin") {
+      // Superadmin can see pending New Clients (parent_email is null or they can just see all)
+      query += " ORDER BY created_at DESC";
+    } else if (req.user.role === "user") {
+      // Primary Clients see requests aimed at their email
+      query += " WHERE parent_email = ? ORDER BY created_at DESC";
+      values.push(req.user.email);
+    } else {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+
+    const [rows] = await pool.query(query, values);
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ List pending accounts error:", err.message);
+    res.status(500).json({ error: "Failed to list pending accounts" });
+  }
+});
+
+// ── POST /api/users/approve/:id ──────────────────────────────────────────────
+
+router.post("/approve/:id", async (req, res) => {
+  try {
+    const pendingId = req.params.id;
+    
+    // Fetch pending account
+    const [pendingRows] = await pool.query("SELECT * FROM pending_accounts WHERE id = ?", [pendingId]);
+    if (pendingRows.length === 0) {
+      return res.status(404).json({ error: "Pending account not found" });
+    }
+    
+    const pendingAcc = pendingRows[0];
+
+    // Authorization check
+    if (req.user.role === "user") {
+      if (pendingAcc.parent_email !== req.user.email) {
+        return res.status(403).json({ error: "Not authorized to approve this account" });
+      }
+    } else if (req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    let parentId = null;
+    if (pendingAcc.parent_email) {
+      // Look up parent user
+      const [parentRows] = await pool.query("SELECT id FROM users WHERE email = ?", [pendingAcc.parent_email]);
+      if (parentRows.length > 0) {
+        parentId = parentRows[0].id;
+      }
+    }
+
+    // Insert into users
+    await pool.query(
+      `INSERT INTO users (email, password, username, first_name, last_name, phone, role, parent_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [pendingAcc.email, pendingAcc.password, pendingAcc.username, pendingAcc.first_name, pendingAcc.last_name, pendingAcc.phone, pendingAcc.role, parentId]
+    );
+
+    // Delete from pending
+    await pool.query("DELETE FROM pending_accounts WHERE id = ?", [pendingId]);
+
+    res.json({ success: true, message: "Account approved successfully" });
+  } catch (err) {
+    console.error("❌ Approve account error:", err.message);
+    res.status(500).json({ error: "Failed to approve account" });
+  }
+});
+
+// ── DELETE /api/users/reject/:id ─────────────────────────────────────────────
+
+router.delete("/reject/:id", async (req, res) => {
+  try {
+    const pendingId = req.params.id;
+    
+    // Fetch pending account
+    const [pendingRows] = await pool.query("SELECT * FROM pending_accounts WHERE id = ?", [pendingId]);
+    if (pendingRows.length === 0) {
+      return res.status(404).json({ error: "Pending account not found" });
+    }
+    
+    const pendingAcc = pendingRows[0];
+
+    // Authorization check
+    if (req.user.role === "user") {
+      if (pendingAcc.parent_email !== req.user.email) {
+        return res.status(403).json({ error: "Not authorized to reject this account" });
+      }
+    } else if (req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    // Delete from pending
+    await pool.query("DELETE FROM pending_accounts WHERE id = ?", [pendingId]);
+
+    res.json({ success: true, message: "Account rejected" });
+  } catch (err) {
+    console.error("❌ Reject account error:", err.message);
+    res.status(500).json({ error: "Failed to reject account" });
+  }
+});
+
 // ── GET /api/users ───────────────────────────────────────────────────────────
 
-router.get("/", authorize("superadmin"), async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      "SELECT id, email, phone, username, first_name, last_name, role, created_at, updated_at FROM users ORDER BY id"
-    );
+    let query = "SELECT id, email, phone, username, first_name, last_name, role, parent_id, created_at, updated_at FROM users";
+    const values = [];
+
+    if (req.user.role === "user") {
+      query += " WHERE parent_id = ? ORDER BY id";
+      values.push(req.user.id);
+    } else if (req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    } else {
+      query += " ORDER BY id";
+    }
+
+    const [rows] = await pool.query(query, values);
     res.json(rows);
   } catch (err) {
     console.error("❌ List users error:", err.message);
@@ -103,10 +221,10 @@ router.put("/:id", async (req, res) => {
 
 // ── DELETE /api/users/:id ────────────────────────────────────────────────────
 
-router.delete("/:id", authorize("superadmin"), async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email FROM users WHERE id = ?",
+      "SELECT id, email, parent_id FROM users WHERE id = ?",
       [req.params.id]
     );
 
@@ -114,8 +232,19 @@ router.delete("/:id", authorize("superadmin"), async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const targetUser = rows[0];
+
+    // Authorization check
+    if (req.user.role === "user") {
+      if (targetUser.parent_id !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to delete this user" });
+      }
+    } else if (req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
     await pool.query("DELETE FROM users WHERE id = ?", [req.params.id]);
-    res.json({ ok: true, deleted: rows[0] });
+    res.json({ ok: true, deleted: targetUser });
   } catch (err) {
     console.error("❌ Delete user error:", err.message);
     res.status(500).json({ error: "Failed to delete user" });

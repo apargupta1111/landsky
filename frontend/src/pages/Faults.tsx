@@ -1,35 +1,20 @@
 import { useMemo, useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, Filter, X, ChevronLeft } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export function Faults() {
-  const gateways = useAppStore((s) => s.gateways);
   const faults = useAppStore((s) => s.faults);
+  const resolveFault = useAppStore((s) => s.resolveFault);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
 
-  const [wardFilter, setWardFilter] = useState('');
-  const [gatewayFilter, setGatewayFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
   const [activeFault, setActiveFault] = useState<any>(null);
 
   useEffect(() => {
     useAppStore.getState().fetchFaults();
   }, []);
 
-  const filteredFaults = useMemo(
-    () => faults.filter((fault) => {
-      const matchesWard = wardFilter ? fault.wardName.toLowerCase().includes(wardFilter.toLowerCase()) : true;
-      const matchesGateway = gatewayFilter ? fault.gatewayId === gatewayFilter : true;
-      const matchesPriority = priorityFilter ? fault.priority === priorityFilter : true;
-      const matchesStatus = statusFilter ? fault.status === statusFilter : true;
-      const matchesDate = dateFilter ? fault.timestamp.startsWith(dateFilter) : true;
-      return matchesWard && matchesGateway && matchesPriority && matchesStatus && matchesDate;
-    }),
-    [faults, wardFilter, gatewayFilter, priorityFilter, statusFilter, dateFilter],
-  );
+  const filteredFaults = faults;
 
   const grouped = useMemo(() => {
     return filteredFaults.reduce((acc: Record<string, typeof faults>, fault) => {
@@ -51,74 +36,6 @@ export function Faults() {
           </button>
           <h1 className="text-3xl font-bold">Faults</h1>
           <p className="mt-2 text-[var(--text-secondary)]">Manage active fault tickets by project, gateway, priority, and status.</p>
-        </div>
-      </div>
-
-      <div className="glass-panel rounded-3xl border border-[var(--panel-border)] p-6">
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-          <div className="col-span-1 xl:col-span-2 grid grid-cols-1 gap-4">
-            <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
-              <Search className="w-4 h-4 text-[var(--text-secondary)]" />
-              <input
-                value={wardFilter}
-                onChange={(e) => setWardFilter(e.target.value)}
-                placeholder="Filter by ward"
-                className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
-              />
-            </div>
-            <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
-              <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)]"
-              >
-                <option value="">Status</option>
-                <option value="Open">Open</option>
-                <option value="Assigned">Assigned</option>
-                <option value="Resolved">Resolved</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 xl:col-span-3">
-            <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
-              <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
-              <select
-                value={gatewayFilter}
-                onChange={(e) => setGatewayFilter(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)]"
-              >
-                <option value="">Gateway</option>
-                {gateways.map((gateway) => (
-                  <option key={gateway.id} value={gateway.id}>{gateway.id}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
-                <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)]"
-                >
-                  <option value="">Priority</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 rounded-full px-3 py-2 border border-[var(--panel-border)]">
-                <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-primary)]"
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -203,8 +120,15 @@ export function Faults() {
                   </div>
                 ))}
                 <div className="flex gap-3">
-                  <button className="flex-1 px-4 py-3 rounded-2xl bg-primary text-black font-bold">Assign</button>
-                  <button className="flex-1 px-4 py-3 rounded-2xl bg-green-500/15 text-green-400 border border-green-400/30">Resolve</button>
+                  <button 
+                    onClick={async () => {
+                      const success = await resolveFault(activeFault.id);
+                      if (success) setActiveFault(null);
+                    }}
+                    className="flex-1 px-4 py-3 rounded-2xl bg-green-500/15 text-green-400 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                  >
+                    Resolve
+                  </button>
                 </div>
               </div>
             </motion.div>

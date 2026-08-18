@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 
 
 
-export function Login() {
+export function Login({ onGoToRegister }: { onGoToRegister?: () => void }) {
   const login = useAppStore((s) => s.login);
 
   const [username, setUsername] = useState('');
@@ -153,6 +153,14 @@ export function Login() {
           </form>
 
           {/* Footer hint */}
+          {onGoToRegister && (
+            <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
+              Don't have an account?{' '}
+              <button type="button" onClick={onGoToRegister} className="text-primary font-bold hover:underline">
+                Sign Up
+              </button>
+            </div>
+          )}
          
         </div>
       </motion.div>

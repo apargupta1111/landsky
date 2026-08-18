@@ -9,23 +9,46 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
+const { authenticate } = require("../middleware/auth");
 
 /**
  * GET /api/devices
  * Returns all lights from the database, formatted like TTS devices were.
  */
-router.get("/", async (req, res) => {
+router.get("/", authenticate, async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    let query = `
       SELECT l.*,
+             g.name AS gateway_name,
+             g.eui AS gateway_eui,
              ls.brightness_percent,
              ls.led_mode,
              ls.relay_state,
              ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
-      ORDER BY l.id
-    `);
+      LEFT JOIN gateways g ON l.gateway_id = g.id
+    `;
+    const values = [];
+
+    // Find the main organization ID (the Main User)
+    const mainUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
+
+    // Filter by user role
+    if (req.user.role === 'user') {
+      // Users (main or sub) see all lights owned by their organization
+      query += ` WHERE l.user_id = ?`;
+      values.push(mainUserId);
+    } else if (req.user.role === 'installer') {
+      // Installers only see the lights they physically installed
+      query += ` WHERE l.installer = ?`;
+      values.push(req.user.id);
+    }
+    // superadmin sees all
+
+    query += ` ORDER BY l.id`;
+
+    const [rows] = await pool.query(query, values);
 
     // Transform DB row format to the frontend-friendly format
     // (same shape the old TTS-based route returned)
@@ -49,6 +72,9 @@ router.get("/", async (req, res) => {
       faultStatus: row.fault_status,
       lastSeenTime: row.last_seen_time,
       totalPowerSavedKwh: parseFloat(row.total_power_saved_kwh) || 0,
+      gatewayId: row.gateway_id,
+      gatewayEui: row.gateway_eui,
+      gatewayName: row.gateway_name,
     }));
 
     res.json(formatted);
@@ -66,12 +92,15 @@ router.get("/:deviceId", async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT l.*,
+             g.name AS gateway_name,
+             g.eui AS gateway_eui,
              ls.brightness_percent,
              ls.led_mode,
              ls.relay_state,
              ls.total_power_saved_kwh
       FROM lights l
       LEFT JOIN light_status ls ON ls.light_id = l.id
+      LEFT JOIN gateways g ON l.gateway_id = g.id
       WHERE l.name = ?
     `, [req.params.deviceId]);
 
@@ -96,6 +125,8 @@ router.get("/:deviceId", async (req, res) => {
       totalPowerSavedKwh: parseFloat(row.total_power_saved_kwh) || 0,
       lat: parseFloat(row.latitude) || 0,
       lng: parseFloat(row.longitude) || 0,
+      gatewayId: row.gateway_id,
+      gatewayName: row.gateway_name,
     });
   } catch (err) {
     console.error("❌ Error getting device:", err.message);
