@@ -14,8 +14,10 @@ export function GatewayDetails() {
   const gateway = gateways.find((item) => item.id === selectedGatewayId);
   const district = districts.find((d) => d.id === gateway?.districtId);
   
-  // Use gatewayEui for matching
-  const gatewayLights = devices.filter((dev) => dev.gatewayEui && String(dev.gatewayEui) === String(selectedGatewayId));
+  const gatewayLights = devices.filter((dev) => 
+    (dev.gatewayId && String(dev.gatewayId) === String(selectedGatewayId)) ||
+    (dev.gatewayEui && gateway?.eui && String(dev.gatewayEui) === String(gateway?.eui))
+  );
 
   const [query, setQuery] = useState('');
   const [activeLight, setActiveLight] = useState<any>(null);
