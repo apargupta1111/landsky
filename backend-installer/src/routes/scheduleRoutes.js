@@ -148,7 +148,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const [result] = await pool.query(
-      "UPDATE schedules SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL",
+      "DELETE FROM schedules WHERE id = ?",
       [req.params.id]
     );
 
