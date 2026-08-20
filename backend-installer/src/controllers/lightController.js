@@ -97,7 +97,13 @@ const createLight = async (req, res) => {
 
   try {
     const installerId = installer || (req.user && req.user.id) || 1;
-    const userId = user_id || (req.user && req.user.id) || 1;
+    
+    // Determine the main organization ID (user_id)
+    let defaultUserId = 1;
+    if (req.user) {
+      defaultUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
+    }
+    const userId = user_id || defaultUserId;
 
     // MySQL doesn't support RETURNING, so we grab the insertId and SELECT it
     const normalizedName = name ? name.toLowerCase() : null;

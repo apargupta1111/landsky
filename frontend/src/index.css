@@ -94,3 +94,65 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Animated Cyber Background */
+.cyber-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--bg-color);
+  transition: background-color 0.3s ease;
+}
+
+.dark .cyber-bg::before, .dark .cyber-bg::after {
+  content: "";
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  animation: float 25s infinite ease-in-out alternate;
+}
+
+.dark .cyber-bg::before {
+  top: -20vh;
+  left: -10vw;
+  background: var(--accent-primary);
+}
+
+.dark .cyber-bg::after {
+  bottom: -20vh;
+  right: -10vw;
+  background: var(--accent-secondary);
+  animation-delay: -12.5s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(10vw, 5vh) scale(1.1); }
+  100% { transform: translate(-5vw, 15vh) scale(0.9); }
+}
+
+.dark .cyber-grid {
+  position: absolute;
+  inset: -100% -100% 0 -100%;
+  background-image: 
+    linear-gradient(to right, rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(600px) rotateX(60deg) scale(1.5) translateY(0);
+  transform-origin: bottom center;
+  animation: grid-move 15s linear infinite;
+  mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+}
+
+@keyframes grid-move {
+  0% { transform: perspective(600px) rotateX(60deg) scale(1.5) translateY(0); }
+  100% { transform: perspective(600px) rotateX(60deg) scale(1.5) translateY(60px); }
+}

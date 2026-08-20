@@ -13,6 +13,7 @@ const router = express.Router();
 const { sendDownlink } = require("../services/ttsApiService");
 const { setTargetCommand } = require("../services/commandStore");
 const pool = require("../config/db");
+const { authenticate } = require("../middleware/auth");
 
 // ── Payload Encoders ───────────────────────────────────────────────────────────
 // TTS downlink payload is a SINGLE BYTE: the brightness value (0–100 decimal).
@@ -159,7 +160,7 @@ router.post("/control", async (req, res) => {
  * Broadcast a DELAY command to all lights.
  * Body: { delaySeconds: number }
  */
-router.post("/set-delay", async (req, res) => {
+router.post("/set-delay", authenticate, async (req, res) => {
   const { delaySeconds } = req.body;
   
   const seconds = Number(delaySeconds);
@@ -175,8 +176,21 @@ router.post("/set-delay", async (req, res) => {
     // Convert to hex: "44454C41593A3230303030"
     const hexPayload = Buffer.from(asciiPayload).toString('hex').toUpperCase();
 
-    // Fetch all lights that have a name (TTS device ID)
-    const [lights] = await pool.query("SELECT name FROM lights WHERE name IS NOT NULL AND name != ''");
+    // Find the main organization ID
+    const mainUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
+    let query = "SELECT name FROM lights WHERE name IS NOT NULL AND name != ''";
+    const values = [];
+
+    if (req.user.role === 'user') {
+      query += " AND user_id = ?";
+      values.push(mainUserId);
+    } else if (req.user.role === 'installer') {
+      query += " AND installer = ?";
+      values.push(req.user.id);
+    }
+
+    // Fetch lights
+    const [lights] = await pool.query(query, values);
 
     if (lights.length === 0) {
       return res.status(400).json({ error: "No lights found to broadcast to." });
