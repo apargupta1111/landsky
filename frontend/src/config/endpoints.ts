@@ -6,9 +6,9 @@ export const ENDPOINTS = {
     console:  `http://${SERVER_IP}/console`,
   },
   // Use env variable or default to direct backend url (not proxy)
-  backend: { base: import.meta.env.VITE_SERVER_IP || 'http://localhost:5001' },
+  backend: { base: import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001') },
   /** @deprecated use backend instead */
-  nodered: { base: import.meta.env.VITE_SERVER_IP || 'http://localhost:5001' },
+  nodered: { base: import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001') },
 };
 
 // ─── Device Config ────────────────────────────────────────────────────────────

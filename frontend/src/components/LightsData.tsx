@@ -16,7 +16,7 @@ interface Props {
   onClose: () => void;
 }
 
-const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 
 export function LightsData({ light, isOpen, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'controls' | 'schedule'>('controls');

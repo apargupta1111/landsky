@@ -31,7 +31,7 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
     if (!dbId) return;
     const fetchLastDim = async () => {
       try {
-        const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+        const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
         const res = await fetch(`${SERVER_IP}/api/action-logs?light_id=${dbId}&limit=1`);
         if (!res.ok) return;
         const logs = await res.json();

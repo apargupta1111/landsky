@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { fetchWithAuth } from '../utils/api';
 import { UserCheck, UserX, User, ShieldAlert, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
-const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5001';
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 
 interface PendingAccount {
   id: number;

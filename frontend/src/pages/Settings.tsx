@@ -7,7 +7,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { AddLightModal } from '../components/AddLightModal';
 
-const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 import { fetchWithAuth } from '../utils/api';
 
 

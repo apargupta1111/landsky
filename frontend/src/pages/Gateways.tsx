@@ -52,7 +52,7 @@ export function Gateways() {
     setActionError(null);
 
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const url = editingGatewayId 
         ? `${SERVER_IP}/api/gateways/${editingGatewayId}`
         : `${SERVER_IP}/api/gateways`;
@@ -101,7 +101,7 @@ export function Gateways() {
     setActionError(null);
 
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const deleteRes = await fetch(`${SERVER_IP}/api/gateways/${id}`, {
         method: 'DELETE',
       });
