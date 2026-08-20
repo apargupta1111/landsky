@@ -7,7 +7,7 @@ export function useSchedule(lightId: string) {
 
   const fetchSchedules = useCallback(async () => {
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const res = await fetch(`${SERVER_IP}/api/schedules?light_id=${lightId}`);
       if (res.ok) {
         const data = await res.json();

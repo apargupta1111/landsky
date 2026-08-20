@@ -49,7 +49,7 @@ export const createProjectSlice = (set: any) => ({
   fetchFaults: async () => {
     set({ isLoadingFaults: true });
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const res = await fetchWithAuth(`${SERVER_IP}/api/alerts?status=active`);
       if (res.ok) {
         const data = await res.json();
@@ -75,7 +75,7 @@ export const createProjectSlice = (set: any) => ({
   },
   fetchActiveFaultCount: async () => {
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const res = await fetchWithAuth(`${SERVER_IP}/api/alerts?status=active`);
       if (res.ok) {
         const data = await res.json();
@@ -87,7 +87,7 @@ export const createProjectSlice = (set: any) => ({
   },
   resolveFault: async (id: string) => {
     try {
-      const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+      const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
       const res = await fetchWithAuth(`${SERVER_IP}/api/alerts/${id}/resolve`, {
         method: 'PUT',
       });

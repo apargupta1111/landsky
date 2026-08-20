@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/useAppStore';
 
-const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:5000';
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 
 /**
  * A wrapper around fetch that automatically handles Authorization headers

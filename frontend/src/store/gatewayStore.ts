@@ -2,7 +2,7 @@ import type { Gateway, TelemetrySnapshot, ApiGatewayItem } from './types';
 import { fetchWithAuth } from '../utils/api';
 
 // Get Serer IP from environment variable
-const SERVER_IP = import.meta.env.VITE_SERVER_IP;
+const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 
 
 export const createGatewaySlice = (set: any) => ({
