@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import {
-  Sun, User, Lock, Trash2, Plus,
-  Save, AlertTriangle, CheckCircle, Wifi, Bell, Shield,
+  Sun, User, Lock, Trash2,
+  Save, AlertTriangle, CheckCircle, Bell, Shield,
   Clock, Send
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { AddLightModal } from '../components/AddLightModal';
 
 const SERVER_IP = import.meta.env.VITE_SERVER_IP || 'http://localhost:3000';
+import { fetchWithAuth } from '../utils/api';
 
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
@@ -49,7 +50,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function Settings() {
-  const { isDarkMode, toggleTheme, username, logout, devices, removeDevice, clearTelemetryHistory } = useAppStore();
+  const { isDarkMode, toggleTheme, username, logout, clearTelemetryHistory } = useAppStore();
   const [addLightOpen, setAddLightOpen]   = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [autoRefresh,   setAutoRefresh]   = useState(true);
@@ -82,7 +83,7 @@ export function Settings() {
 
     setIsBroadcasting(true);
     try {
-      const res = await fetch(`${SERVER_IP}/smartlight/set-delay`, {
+      const res = await fetchWithAuth(`${SERVER_IP}/smartlight/set-delay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delaySeconds: delayValue })
@@ -161,41 +162,7 @@ export function Settings() {
      
 
       {/* ── Devices ────────────────────────────────────────────────────────── */}
-      <SectionCard title="Registered Devices" icon={<Wifi className="w-5 h-5" />}>
-        <div className="space-y-3 mb-4">
-          {devices.map((dev, i) => (
-            <div key={dev.id} className="flex items-start gap-3 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-[var(--panel-border)]">
-              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${i === 0 ? 'bg-green-400 animate-pulse' : 'bg-error'}`} />
-              <div className="flex-1 min-w-0">
-                <div className="font-bold data-font text-sm">{dev.id}</div>
-                <div className="text-xs text-[var(--text-secondary)] truncate">{dev.name} · {dev.address}</div>
-                <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                  TTS ID: <span className="font-mono">{dev.ttsDeviceId}</span> ·
-                  Added: {new Date(dev.addedAt).toLocaleDateString()}
-                </div>
-              </div>
-              {i !== 0 && (
-                <button
-                  onClick={() => removeDevice(dev.id)}
-                  className="p-1.5 rounded-lg hover:bg-error/10 hover:text-error text-[var(--text-secondary)] transition-colors shrink-0"
-                  title="Remove device"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              {i === 0 && (
-                <span className="text-xs text-[var(--text-secondary)] shrink-0 mt-1">Primary</span>
-              )}
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => setAddLightOpen(true)}
-          className="w-full py-2.5 rounded-xl border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-sm font-bold"
-        >
-          <Plus className="w-4 h-4" /> Add New Device
-        </button>
-      </SectionCard>
+     
 
       {/* ── Global Controls ────────────────────────────────────────────────── */}
       <SectionCard title="Global Light Settings" icon={<Clock className="w-5 h-5" />}>

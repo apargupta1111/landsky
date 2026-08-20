@@ -41,12 +41,14 @@ export function DeviceCard({ id, name, status, brightness, power, gatewayName, o
       </div>
       
       <div className="space-y-3 relative z-10">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-[var(--text-secondary)]">Brightness</span>
-          <span className="data-font font-bold">{brightness}%</span>
-        </div>
-        <div className="h-1.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-          <div className="h-full rounded-full shadow-[0_0_10px_currentColor]" style={{ width: `${brightness}%`, backgroundColor: color, color }} />
+        <div className={`space-y-3 ${status === 'error' ? 'invisible' : ''}`}>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-[var(--text-secondary)]">Brightness</span>
+            <span className="data-font font-bold">{brightness}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full rounded-full shadow-[0_0_10px_currentColor]" style={{ width: `${brightness}%`, backgroundColor: color, color }} />
+          </div>
         </div>
         
         <div className="flex justify-between items-center text-sm pt-2 border-t border-[var(--panel-border)]">

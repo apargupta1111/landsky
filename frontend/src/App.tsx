@@ -44,13 +44,25 @@ function App() {
 
   if (!isAuthenticated) {
     if (authMode === 'register') {
-      return <Register onGoToLogin={() => setAuthMode('login')} />;
+      return (
+        <>
+          <div className="cyber-bg"><div className="cyber-grid"></div></div>
+          <Register onGoToLogin={() => setAuthMode('login')} />
+        </>
+      );
     }
-    return <Login onGoToRegister={() => setAuthMode('register')} />;
+    return (
+      <>
+        <div className="cyber-bg"><div className="cyber-grid"></div></div>
+        <Login onGoToRegister={() => setAuthMode('register')} />
+      </>
+    );
   }
 
   return (
-    <MainLayout>
+    <>
+      <div className="cyber-bg"><div className="cyber-grid"></div></div>
+      <MainLayout>
       {currentPage === 'dashboard' && <Dashboard />}
       {currentPage === 'projects' && <Projects />}
       {currentPage === 'nagarpalikas' && <Nagarpalikas />}
@@ -64,6 +76,7 @@ function App() {
       {currentPage === 'team' && <Team />}
       {currentPage === 'settings'  && <Settings />}
     </MainLayout>
+    </>
   );
 }
 
