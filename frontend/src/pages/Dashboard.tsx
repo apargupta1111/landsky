@@ -85,8 +85,9 @@ export function Dashboard() {
 
     const brightness = parseFloat(tlv(telemetry, 'brightness_percent', '0')) || 0;
     const power = parseFloat(tlv(telemetry, 'led_power_W', '0')) || 0;
+    const operatingHours = parseFloat(tlv(telemetry, 'operating_time_hours', '0')) || 0;
 
-    return { status, brightness, power };
+    return { status, brightness, power, operatingHours };
   };
 
   const enrichedDevices = devices.map((dev) => {
@@ -108,6 +109,10 @@ export function Dashboard() {
   const faultyLights  = enrichedDevices.filter((d) => d.status === 'warning').length;
   
   const totalPowerSaved = enrichedDevices.reduce((sum, d) => sum + (d.totalPowerSavedKwh || 0), 0);
+  const totalOperatingHours = enrichedDevices.reduce((sum, d) => sum + (d.operatingHours || 0), 0);
+  const maxPossiblePowerKwh = (100.0 * totalOperatingHours) / 1000.0;
+  const totalPowerConsumed = Math.max(0, maxPossiblePowerKwh - totalPowerSaved);
+
   const co2SavedKg = totalPowerSaved * 0.85; // 0.85 kg CO2 per kWh
   const treesPlanted = co2SavedKg / 21.77;   // ~21.77 kg CO2 absorbed per tree per year
 
@@ -181,6 +186,11 @@ export function Dashboard() {
           title="Equivalent Trees"
           value={`${treesPlanted.toFixed(1)}`}
           sub="Trees planted"
+        />
+        <KpiCard
+          title="Total Power Consumed"
+          value={`${totalPowerConsumed.toFixed(2)} kWh`}
+          sub="Energy used"
         />
       </div>
       

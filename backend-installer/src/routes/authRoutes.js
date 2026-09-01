@@ -7,10 +7,24 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const pool = require("../config/db");
 const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587", 10),
+  secure: false, // true for 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false, // allows self-signed certs
+  },
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || "landskysecret";
 const ACCESS_TOKEN_EXPIRY = "1h";
@@ -30,6 +44,75 @@ function generateAccessToken(user) {
 function generateRefreshToken() {
   return crypto.randomBytes(64).toString("hex");
 }
+
+// ── POST /api/auth/send-otp ──────────────────────────────────────────────────
+
+router.post("/send-otp", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  try {
+    // Check if email already registered
+    const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (existingUsers.length > 0) return res.status(409).json({ error: "Email already registered" });
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Upsert into email_verifications
+    await pool.query(
+      `INSERT INTO email_verifications (email, otp, expires_at, is_verified) 
+       VALUES (?, ?, ?, FALSE)
+       ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at), is_verified = FALSE`,
+      [email, otp, expiresAt]
+    );
+
+    // Send email
+    if (process.env.SMTP_USER) {
+      await transporter.sendMail({
+        from: `"SmartLight - HBeon Labs" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Your Registration OTP",
+        text: `Your OTP for registration is: ${otp}\nIt will expire in 10 minutes.`,
+      });
+    } else {
+      console.log(`\n\n[DEV] OTP for ${email}: ${otp}\n\n`);
+    }
+
+    res.json({ message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("❌ Send OTP error:", err.message);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
+});
+
+// ── POST /api/auth/verify-otp ────────────────────────────────────────────────
+
+router.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required" });
+
+  try {
+    const [rows] = await pool.query("SELECT * FROM email_verifications WHERE email = ?", [email]);
+    if (rows.length === 0) return res.status(404).json({ error: "No OTP found for this email" });
+
+    const record = rows[0];
+    if (new Date() > new Date(record.expires_at)) {
+      return res.status(400).json({ error: "OTP has expired. Please request a new one." });
+    }
+    if (record.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    // Mark as verified
+    await pool.query("UPDATE email_verifications SET is_verified = TRUE WHERE email = ?", [email]);
+    res.json({ message: "Email verified successfully" });
+  } catch (err) {
+    console.error("❌ Verify OTP error:", err.message);
+    res.status(500).json({ error: "Failed to verify OTP" });
+  }
+});
 
 // ── POST /api/auth/register ──────────────────────────────────────────────────
 
@@ -52,6 +135,12 @@ router.post("/register", async (req, res) => {
     if (existingUsers.length > 0) {
       return res.status(409).json({ error: "Email already registered" });
     }
+
+    // Check if OTP verified
+    const [verifyRows] = await pool.query("SELECT is_verified FROM email_verifications WHERE email = ?", [email]);
+    if (verifyRows.length === 0 || !verifyRows[0].is_verified) {
+      return res.status(403).json({ error: "Email has not been verified with OTP" });
+    }
     
     const [existingPending] = await pool.query("SELECT id FROM pending_accounts WHERE email = ?", [email]);
     if (existingPending.length > 0) {
@@ -66,6 +155,9 @@ router.post("/register", async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [email, hashedPassword, username || null, first_name || null, last_name || null, phone || null, userRole, parent_email || null]
     );
+
+    // Clean up OTP
+    await pool.query("DELETE FROM email_verifications WHERE email = ?", [email]);
 
     res.status(201).json({
       message: "Registration request sent successfully. Pending approval.",
