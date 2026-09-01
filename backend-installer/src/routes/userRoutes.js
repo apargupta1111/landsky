@@ -219,12 +219,57 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ── PUT /api/users/:id/change-password ────────────────────────────────────────
+
+router.put("/:id/change-password", async (req, res) => {
+  try {
+    let targetId = req.params.id;
+    if (targetId === "me") {
+      targetId = req.user.id;
+    }
+    const { currentPassword, newPassword } = req.body;
+
+    // Users can only change their own password, superadmin can change anyone's
+    if (req.user.role !== "superadmin" && parseInt(req.user.id, 10) !== parseInt(targetId, 10)) {
+      return res.status(403).json({ error: "Not authorized to change this user's password" });
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current password and new password are required" });
+    }
+
+    const [rows] = await pool.query("SELECT password FROM users WHERE id = ?", [targetId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = rows[0];
+
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Incorrect current password" });
+    }
+
+    const hashedNew = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await pool.query(
+      "UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [hashedNew, targetId]
+    );
+
+    res.json({ ok: true, message: "Password updated successfully" });
+  } catch (err) {
+    console.error("❌ Change password error:", err.message);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+});
+
 // ── DELETE /api/users/:id ────────────────────────────────────────────────────
 
 router.delete("/:id", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, parent_id FROM users WHERE id = ?",
+      "SELECT id, email, parent_id, role FROM users WHERE id = ?",
       [req.params.id]
     );
 
@@ -234,9 +279,14 @@ router.delete("/:id", async (req, res) => {
 
     const targetUser = rows[0];
 
+    // Prevent deletion of superadmin
+    if (targetUser.role === "superadmin") {
+      return res.status(403).json({ error: "Cannot delete the superadmin account" });
+    }
+
     // Authorization check
     if (req.user.role === "user") {
-      if (targetUser.parent_id !== req.user.id) {
+      if (targetUser.id !== req.user.id && targetUser.parent_id !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to delete this user" });
       }
     } else if (req.user.role !== "superadmin") {

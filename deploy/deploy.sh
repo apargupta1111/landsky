@@ -71,19 +71,15 @@ npm run build
 echo "[7/10] Restarting LANDSKY backend..."
 pm2 restart landsky-backend-installer --update-env
 
-echo "[8/10] Restarting LANDSKY frontend..."
-pm2 restart landsky-frontend --update-env
-
-echo "[9/10] Saving PM2 configuration..."
+echo "[8/10] Saving PM2 configuration..."
 pm2 save
 
-echo "[10/10] Deployment verification..."
+echo "[9/10] Deployment verification..."
 sleep 5
 pm2 list
 
 # Very basic health check using pm2 describe
 pm2 describe landsky-backend-installer > /dev/null || (echo "Backend failed to start!" && exit 1)
-pm2 describe landsky-frontend > /dev/null || (echo "Frontend failed to start!" && exit 1)
 
 # Remove the rollback trap on success
 trap - EXIT
