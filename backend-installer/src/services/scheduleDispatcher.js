@@ -57,11 +57,17 @@ function initScheduleDispatcher() {
   cron.schedule("* * * * *", async () => {
     try {
       const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, '0');
-      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-      const currentTime = `${currentHours}:${currentMinutes}`;
+      // Force time to IST timezone for scheduling (assuming users are in India)
+      const options = { timeZone: "Asia/Kolkata", hour: '2-digit', minute: '2-digit', hour12: false };
+      let currentTime = new Intl.DateTimeFormat('en-GB', options).format(now);
       
-      const currentDay = now.getDay(); // 0 (Sunday) to 6 (Saturday)
+      // Handle edge cases where Intl returns 24:00 instead of 00:00
+      if (currentTime.startsWith('24:')) {
+        currentTime = currentTime.replace('24:', '00:');
+      }
+
+      const istDateString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      const currentDay = new Date(istDateString).getDay(); // 0 (Sunday) to 6 (Saturday)
 
       const [schedules] = await pool.query(`
         SELECT s.id, s.light as db_light_id, s.start_time, s.stop_time, 

@@ -57,6 +57,49 @@ export function Settings() {
   const [saved,         setSaved]         = useState(false);
   const [confirmReset,  setConfirmReset]  = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState<{type: 'error' | 'success', msg: string} | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordStatus(null);
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordStatus({ type: 'error', msg: 'Please fill in all password fields' });
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus({ type: 'error', msg: 'New passwords do not match' });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetchWithAuth(`${SERVER_IP}/api/users/me/change-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password');
+      
+      setPasswordStatus({ type: 'success', msg: 'Password updated successfully!' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordStatus({ type: 'error', msg: err.message });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -116,12 +159,7 @@ export function Settings() {
           value={isDarkMode}
           onChange={toggleTheme}
         />
-        <ToggleRow
-          label="Auto Refresh"
-          sub="Poll telemetry every 5 seconds automatically"
-          value={autoRefresh}
-          onChange={() => setAutoRefresh((v) => !v)}
-        />
+       
         <ToggleRow
           label="Alert Notifications"
           sub="Show alert badges in the topbar"
@@ -159,7 +197,58 @@ export function Settings() {
         </div>
       </SectionCard>
 
-     
+      {/* ── Security ────────────────────────────────────────────────────────── */}
+      <SectionCard title="Security" icon={<Lock className="w-5 h-5" />}>
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+
+          {passwordStatus && (
+            <div className={`text-sm p-3 rounded-lg ${passwordStatus.type === 'error' ? 'bg-error/10 text-error' : 'bg-green-500/10 text-green-500'}`}>
+              {passwordStatus.msg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isChangingPassword}
+            className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isChangingPassword ? 'Updating...' : 'Update Password'}
+          </button>
+        </form>
+      </SectionCard>
 
       {/* ── Devices ────────────────────────────────────────────────────────── */}
      
@@ -202,26 +291,7 @@ export function Settings() {
       </SectionCard>
 
       {/* ── Data & Privacy ─────────────────────────────────────────────────── */}
-      <SectionCard title="Data & History" icon={<Bell className="w-5 h-5" />}>
-        <div className="flex items-center gap-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-[var(--panel-border)] mb-4">
-          <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
-          <p className="text-sm text-[var(--text-secondary)]">
-            Telemetry history is stored locally and used to render analytics charts.
-            Clearing it will reset all historical trend data.
-          </p>
-        </div>
-        <button
-          onClick={handleHistoryClear}
-          className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 ${
-            confirmReset
-              ? 'bg-error/20 text-error border-error/50'
-              : 'border-[var(--panel-border)] text-[var(--text-secondary)] hover:border-error/50 hover:text-error'
-          }`}
-        >
-          <Trash2 className="w-4 h-4" />
-          {confirmReset ? 'Click again to confirm clear' : 'Clear Telemetry History'}
-        </button>
-      </SectionCard>
+  
 
       {/* ── Save bar ───────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between p-4 glass-panel rounded-xl border glowing-border">
