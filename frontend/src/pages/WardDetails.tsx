@@ -47,8 +47,8 @@ function WardMap({ devices, wardName }: { devices: any[]; wardName: string }) {
 
       // Match CityMap tile selection based on dark/light mode
       const tileUrl = isDarkMode
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_2lwq_1_02284cb8882fd6148f92cc12'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_2lwq_1_02284cb8882fd6148f92cc12';
 
       L.tileLayer(tileUrl, {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM contributors',
