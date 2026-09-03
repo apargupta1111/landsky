@@ -9,6 +9,7 @@ import { TelemetryPanel } from './lightsData/TelemetryPanel';
 import { ScheduleTab } from './lightsData/ScheduleTab';
 import type { Light } from './lightsData/types';
 import { useAppStore } from '../store/useAppStore';
+import { fetchWithAuth } from '../utils/api';
 
 interface Props {
   light: Light | null;
@@ -33,7 +34,7 @@ export function LightsData({ light, isOpen, onClose }: Props) {
     
     setIsDeleting(true);
     try {
-      const res = await fetch(`${SERVER_IP}/api/lights/${light.dbId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`${SERVER_IP}/api/lights/${light.dbId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete light');
       
       removeDevice(light.id);
