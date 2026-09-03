@@ -64,6 +64,12 @@ export function Settings() {
   const [passwordStatus, setPasswordStatus] = useState<{type: 'error' | 'success', msg: string} | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  // Profile update state
+  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState(username || '');
+  const [profileStatus, setProfileStatus] = useState<{type: 'error' | 'success', msg: string} | null>(null);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordStatus(null);
@@ -97,6 +103,38 @@ export function Settings() {
       setPasswordStatus({ type: 'error', msg: err.message });
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileStatus(null);
+    
+    if (!newUsername && !newEmail) {
+      setProfileStatus({ type: 'error', msg: 'Please provide a username or email to update' });
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const body: any = {};
+      if (newUsername) body.username = newUsername;
+      if (newEmail) body.email = newEmail;
+
+      const res = await fetchWithAuth(`${SERVER_IP}/api/users/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+      
+      setProfileStatus({ type: 'success', msg: 'Profile updated successfully! (Note: You may need to log out and log back in to see all changes)' });
+    } catch (err: any) {
+      setProfileStatus({ type: 'error', msg: err.message });
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -194,6 +232,50 @@ export function Settings() {
           >
             <Lock className="w-4 h-4" /> Sign Out
           </button>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-[var(--panel-border)]">
+          <h4 className="text-sm font-bold mb-4">Update Profile details</h4>
+          <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-sm">
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+                New Username
+              </label>
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Leave blank to keep current"
+                className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider">
+                New Email
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Leave blank to keep current"
+                className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+
+            {profileStatus && (
+              <div className={`text-sm p-3 rounded-lg ${profileStatus.type === 'error' ? 'bg-error/10 text-error' : 'bg-green-500/10 text-green-500'}`}>
+                {profileStatus.msg}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isUpdatingProfile}
+              className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {isUpdatingProfile ? 'Updating...' : 'Save Profile'}
+            </button>
+          </form>
         </div>
       </SectionCard>
 

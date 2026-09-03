@@ -168,10 +168,15 @@ router.get("/:id", authorize("superadmin"), async (req, res) => {
 // ── PUT /api/users/:id ──────────────────────────────────────────────────────
 
 router.put("/:id", async (req, res) => {
-  const targetId = parseInt(req.params.id, 10);
+  let targetId = req.params.id;
+  if (targetId === "me") {
+    targetId = req.user.id;
+  } else {
+    targetId = parseInt(targetId, 10);
+  }
 
   // Users can update themselves; superadmins can update anyone
-  if (req.user.role !== "superadmin" && req.user.id !== targetId) {
+  if (req.user.role !== "superadmin" && parseInt(req.user.id, 10) !== parseInt(targetId, 10)) {
     return res.status(403).json({ error: "Insufficient permissions" });
   }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Wifi, Tag, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { fetchWithAuth } from '../utils/api';
 import { useEffect } from 'react';
 import type { Device } from '../store/types';
 
@@ -88,7 +89,7 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
     
     try {
       const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
-      const res = await fetch(`${SERVER_IP}/api/lights`, {
+      const res = await fetchWithAuth(`${SERVER_IP}/api/lights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
