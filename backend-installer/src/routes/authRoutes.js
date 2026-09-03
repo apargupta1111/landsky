@@ -48,13 +48,17 @@ function generateRefreshToken() {
 // ── POST /api/auth/send-otp ──────────────────────────────────────────────────
 
 router.post("/send-otp", async (req, res) => {
-  const { email } = req.body;
+  const { email, type = 'register' } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   try {
-    // Check if email already registered
     const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
-    if (existingUsers.length > 0) return res.status(409).json({ error: "Email already registered" });
+    
+    if (type === 'register') {
+      if (existingUsers.length > 0) return res.status(409).json({ error: "Email already registered" });
+    } else if (type === 'reset_password') {
+      if (existingUsers.length === 0) return res.status(404).json({ error: "No account found with this email" });
+    }
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -70,11 +74,16 @@ router.post("/send-otp", async (req, res) => {
 
     // Send email
     if (process.env.SMTP_USER) {
+      const subject = type === 'reset_password' ? "Your Password Reset OTP" : "Your Registration OTP";
+      const text = type === 'reset_password' 
+        ? `Your OTP to reset your password is: ${otp}\nIt will expire in 10 minutes.`
+        : `Your OTP for registration is: ${otp}\nIt will expire in 10 minutes.`;
+
       await transporter.sendMail({
         from: `"SmartLight - HBeon Labs" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: "Your Registration OTP",
-        text: `Your OTP for registration is: ${otp}\nIt will expire in 10 minutes.`,
+        subject,
+        text,
       });
     } else {
       console.log(`\n\n[DEV] OTP for ${email}: ${otp}\n\n`);
@@ -111,6 +120,51 @@ router.post("/verify-otp", async (req, res) => {
   } catch (err) {
     console.error("❌ Verify OTP error:", err.message);
     res.status(500).json({ error: "Failed to verify OTP" });
+  }
+});
+
+// ── POST /api/auth/reset-password ────────────────────────────────────────────
+
+router.post("/reset-password", async (req, res) => {
+  const { email, otp, new_password } = req.body;
+  if (!email || !otp || !new_password) {
+    return res.status(400).json({ error: "Email, OTP, and new password are required" });
+  }
+
+  try {
+    // 1. Verify OTP
+    const [rows] = await pool.query("SELECT * FROM email_verifications WHERE email = ?", [email]);
+    if (rows.length === 0) return res.status(404).json({ error: "No OTP found for this email" });
+
+    const record = rows[0];
+    if (new Date() > new Date(record.expires_at)) {
+      return res.status(400).json({ error: "OTP has expired. Please request a new one." });
+    }
+    if (record.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    // 2. Hash new password
+    const hashedPassword = await bcrypt.hash(new_password, SALT_ROUNDS);
+
+    // 3. Update user
+    const [updateResult] = await pool.query(
+      "UPDATE users SET password = ? WHERE email = ?",
+      [hashedPassword, email]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 4. Delete OTP record (and clean up any expired ones)
+    await pool.query("DELETE FROM email_verifications WHERE email = ? OR NOW() > expires_at", [email]);
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("❌ Reset password error:", err.message);
+    res.status(500).json({ error: "Failed to reset password" });
+
   }
 });
 

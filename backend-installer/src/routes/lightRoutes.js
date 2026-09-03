@@ -11,8 +11,11 @@ const {
   patchLightLocation,
   deleteLight,
 } = require("../controllers/lightController");
+const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", getAllLights);
 router.get("/:id", getLightById);
