@@ -113,8 +113,9 @@ export function Login({ onGoToRegister }: { onGoToRegister?: () => void }) {
 
       {/* ── Card ── */}
       <motion.div
-        animate={shake ? { x: [-10, 10, -8, 8, -4, 4, 0] } : { x: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0, x: shake ? [-10, 10, -8, 8, -4, 4, 0] : 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative z-10 w-full max-w-md mx-4"
       >
         <div className="glass-panel rounded-2xl border glowing-border p-8 md:p-10 shadow-2xl dark:shadow-[0_0_60px_rgba(0,229,255,0.08)]">

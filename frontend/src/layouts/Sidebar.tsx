@@ -260,6 +260,7 @@ export function Sidebar() {
       ) : (
         /* ── DESKTOP: Flex-flow sidebar that squeezes content ── */
         <motion.aside
+          initial={false}
           animate={{ width: sidebarOpen ? 280 : 80 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className="h-screen glass-panel flex flex-col z-20 shrink-0 border-r overflow-hidden relative"

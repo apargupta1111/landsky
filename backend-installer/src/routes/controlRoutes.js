@@ -164,17 +164,15 @@ router.post("/set-delay", authenticate, async (req, res) => {
   const { delaySeconds } = req.body;
   
   const seconds = Number(delaySeconds);
-  if (!seconds || seconds < 2) { // 2s is the absolute hard-minimum, though UI restricts to 20
-    return res.status(400).json({ error: "Invalid delay. Must be at least 2 seconds." });
+  if (!seconds || seconds < 20) { 
+    return res.status(400).json({ error: "Invalid delay. Must be at least 20 seconds." });
   }
 
   try {
-    const delayMs = seconds * 1000;
+    const value = seconds * 10;
     
-    // Create the ascii string e.g. "DELAY:20000"
-    const asciiPayload = `DELAY:${delayMs}`;
-    // Convert to hex: "44454C41593A3230303030"
-    const hexPayload = Buffer.from(asciiPayload).toString('hex').toUpperCase();
+    // Convert to 4-character hex (2 bytes big endian)
+    const hexPayload = value.toString(16).padStart(4, '0').toUpperCase();
 
     // Find the main organization ID
     const mainUserId = req.user.parent_id === null ? req.user.id : req.user.parent_id;
@@ -196,7 +194,7 @@ router.post("/set-delay", authenticate, async (req, res) => {
       return res.status(400).json({ error: "No lights found to broadcast to." });
     }
 
-    console.log(`🌐 Broadcasting DELAY command (Hex: ${hexPayload} for ${delayMs}ms) to ${lights.length} lights...`);
+    console.log(`🌐 Broadcasting DELAY command (Hex: ${hexPayload} for delay value ${value}) to ${lights.length} lights...`);
 
     // Process in the background so API responds quickly
     (async () => {
@@ -217,7 +215,7 @@ router.post("/set-delay", authenticate, async (req, res) => {
 
     res.json({
       ok: true,
-      message: `Broadcasting ${asciiPayload} (Hex: ${hexPayload}) to ${lights.length} lights.`,
+      message: `Broadcasting delay value ${value} (Hex: ${hexPayload}) to ${lights.length} lights.`,
       hex: hexPayload
     });
   } catch (err) {

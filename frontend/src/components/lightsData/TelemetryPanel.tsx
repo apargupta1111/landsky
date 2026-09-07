@@ -17,7 +17,7 @@ export function TelemetryPanel({ telemetry, totalPowerSavedKwh = 0 }: TelemetryP
       {/* Output + Input panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="glass-panel p-6 rounded-xl border">
-          <div className="flex items-center mb-5 text-secondary">
+          <div className="flex items-center mb-5 text-slate-800 dark:text-secondary">
             <Zap className="w-5 h-5 mr-2" />
             <h3 className="font-bold">Output Telemetry (DC)</h3>
           </div>
@@ -30,7 +30,7 @@ export function TelemetryPanel({ telemetry, totalPowerSavedKwh = 0 }: TelemetryP
         </div>
 
         <div className="glass-panel p-6 rounded-xl border">
-          <div className="flex items-center mb-5 text-primary">
+          <div className="flex items-center mb-5 text-slate-800 dark:text-primary">
             <Activity className="w-5 h-5 mr-2" />
             <h3 className="font-bold">Input Telemetry (AC)</h3>
           </div>
