@@ -312,8 +312,8 @@ export function BroadcastControlCard({ devices }: Props) {
               disabled={disabled || activeDevicesCount === 0}
               className={`group relative py-3 rounded-lg font-bold transition-all duration-300 disabled:opacity-40 ${
                 colorMode === 'warm'
-                  ? 'bg-amber-500/25 text-amber-300 border-2 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
-                  : 'bg-amber-500/10 text-amber-400/70 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300'
+                  ? 'bg-amber-500/20 dark:bg-amber-500/25 text-amber-600 dark:text-amber-300 border-2 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                  : 'bg-amber-500/5 dark:bg-amber-500/10 text-amber-600/80 dark:text-amber-400/70 border border-amber-500/20 hover:bg-amber-500/15 dark:hover:bg-amber-500/20 hover:text-amber-700 dark:hover:text-amber-300'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -328,8 +328,8 @@ export function BroadcastControlCard({ devices }: Props) {
               disabled={disabled || activeDevicesCount === 0}
               className={`group relative py-3 rounded-lg font-bold transition-all duration-300 disabled:opacity-40 ${
                 colorMode === 'white'
-                  ? 'bg-sky-400/25 text-sky-200 border-2 border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]'
-                  : 'bg-sky-400/10 text-sky-400/70 border border-sky-400/20 hover:bg-sky-400/20 hover:text-sky-300'
+                  ? 'bg-sky-400/20 dark:bg-sky-400/25 text-sky-600 dark:text-sky-200 border-2 border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]'
+                  : 'bg-sky-400/5 dark:bg-sky-400/10 text-sky-600/80 dark:text-sky-400/70 border border-sky-400/20 hover:bg-sky-400/15 dark:hover:bg-sky-400/20 hover:text-sky-700 dark:hover:text-sky-300'
               }`}
             >
               <div className="flex items-center justify-center gap-2">

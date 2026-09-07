@@ -74,7 +74,7 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
 
   return (
     <div className="glass-panel p-6 rounded-xl border">
-      <div className="flex items-center mb-6 text-primary">
+      <div className="flex items-center mb-6 text-slate-800 dark:text-primary">
         <Settings2 className="w-5 h-5 mr-2" />
         <h3 className="font-bold text-lg">Active Controls</h3>
       </div>
@@ -116,7 +116,7 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
                 disabled={disabled || isOn}
                 className={`py-2.5 rounded-lg text-sm font-bold transition-colors ${
                   !isOn
-                    ? 'bg-primary/20 text-primary border-2 border-primary/50 shadow-[0_0_12px_rgba(0,255,136,0.15)] hover:bg-primary/30'
+                    ? 'bg-primary/10 dark:bg-primary/20 text-primary border-2 border-primary/50 shadow-[0_0_12px_rgba(0,255,136,0.15)] hover:bg-primary/20 dark:hover:bg-primary/30'
                     : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border border-[var(--panel-border)] opacity-40 cursor-not-allowed'
                 }`}
               >
@@ -127,7 +127,7 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
                 disabled={disabled || !isOn}
                 className={`py-2.5 rounded-lg text-sm font-bold transition-colors ${
                   isOn
-                    ? 'bg-error/20 text-error border-2 border-error/50 shadow-[0_0_12px_rgba(239,68,68,0.15)] hover:bg-error/30'
+                    ? 'bg-error/10 dark:bg-error/20 text-error border-2 border-error/50 shadow-[0_0_12px_rgba(239,68,68,0.15)] hover:bg-error/20 dark:hover:bg-error/30'
                     : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border border-[var(--panel-border)] opacity-40 cursor-not-allowed'
                 }`}
               >
@@ -168,8 +168,8 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
               disabled={disabled}
               className={`group py-2.5 rounded-lg text-sm font-bold transition-all duration-300 disabled:opacity-40 ${
                 colorMode === 'warm'
-                  ? 'bg-amber-500/25 text-amber-300 border-2 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                  : 'bg-amber-500/10 text-amber-400/70 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300'
+                  ? 'bg-amber-500/20 dark:bg-amber-500/25 text-amber-600 dark:text-amber-300 border-2 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                  : 'bg-amber-500/5 dark:bg-amber-500/10 text-amber-600/80 dark:text-amber-400/70 border border-amber-500/20 hover:bg-amber-500/15 dark:hover:bg-amber-500/20 hover:text-amber-700 dark:hover:text-amber-300'
               }`}
             >
               <div className="flex items-center justify-center gap-1.5">
@@ -184,8 +184,8 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
               disabled={disabled}
               className={`group py-2.5 rounded-lg text-sm font-bold transition-all duration-300 disabled:opacity-40 ${
                 colorMode === 'white'
-                  ? 'bg-sky-400/25 text-sky-200 border-2 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
-                  : 'bg-sky-400/10 text-sky-400/70 border border-sky-400/20 hover:bg-sky-400/20 hover:text-sky-300'
+                  ? 'bg-sky-400/20 dark:bg-sky-400/25 text-sky-600 dark:text-sky-200 border-2 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
+                  : 'bg-sky-400/5 dark:bg-sky-400/10 text-sky-600/80 dark:text-sky-400/70 border border-sky-400/20 hover:bg-sky-400/15 dark:hover:bg-sky-400/20 hover:text-sky-700 dark:hover:text-sky-300'
               }`}
             >
               <div className="flex items-center justify-center gap-1.5">
@@ -203,8 +203,8 @@ export function ControlsTab({ ctrl, deviceId, dbId, telemetry }: ControlsTabProp
           disabled={disabled}
           className={`w-full py-2.5 rounded-lg border text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 ${
             pendingReset
-              ? 'bg-error/20 text-error border-error/50'
-              : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border-[var(--panel-border)] hover:border-error/50 hover:text-error'
+              ? 'bg-error/10 dark:bg-error/20 text-error border-error/50'
+              : 'bg-black/5 dark:bg-white/5 text-[var(--text-secondary)] border-[var(--panel-border)] hover:bg-error/5 hover:border-error/50 hover:text-error'
           }`}
         >
           <Power className="w-4 h-4" />
