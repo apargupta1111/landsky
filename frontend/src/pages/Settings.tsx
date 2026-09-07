@@ -149,7 +149,7 @@ export function Settings() {
     setConfirmReset(false);
   };
 
-  const [delayValue, setDelayValue] = useState<number>(20);
+  const [delayValue, setDelayValue] = useState<number | ''>(20);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const handleBroadcastDelay = async () => {
@@ -350,10 +350,10 @@ export function Settings() {
                 type="number"
                 min={20}
                 value={delayValue}
-                onChange={(e) => setDelayValue(Number(e.target.value))}
+                onChange={(e) => setDelayValue(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full bg-black/5 dark:bg-white/5 border border-[var(--panel-border)] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-mono"
               />
-              <p className="text-[10px] text-[var(--text-secondary)] mt-1">Minimum value: 20s (Converted to {delayValue * 1000}ms for transmission)</p>
+              <p className="text-[10px] text-[var(--text-secondary)] mt-1">Minimum value: 20s (Converted to {Number(delayValue) * 10} for transmission)</p>
             </div>
             <div className="pt-5">
               <button
