@@ -17,8 +17,32 @@ CREATE TABLE users (
   first_name  VARCHAR(255),
   last_name   VARCHAR(255),
   role        ENUM('superadmin', 'installer', 'user') DEFAULT 'user',
+  parent_id   INT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_parent FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pending_accounts (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  email        VARCHAR(255) UNIQUE NOT NULL,
+  password     VARCHAR(255) NOT NULL,
+  username     VARCHAR(255),
+  first_name   VARCHAR(255),
+  last_name    VARCHAR(255),
+  phone        VARCHAR(255),
+  role         ENUM('superadmin', 'installer', 'user') NOT NULL,
+  parent_email VARCHAR(255) NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS email_verifications (
+  email VARCHAR(255) PRIMARY KEY,
+  otp VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  is_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_users_first_name ON users (first_name);
@@ -38,6 +62,28 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);
 
 -- -----------------------------------------
+-- GATEWAYS
+-- -----------------------------------------
+CREATE TABLE IF NOT EXISTS gateways (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  eui               VARCHAR(255) UNIQUE NOT NULL,
+  name              VARCHAR(255) NOT NULL,
+  description       VARCHAR(255),
+  region            VARCHAR(50),
+  connection_status BOOLEAN DEFAULT FALSE,
+  last_seen         TIMESTAMP NULL,
+  latitude          FLOAT DEFAULT 0.0,
+  longitude         FLOAT DEFAULT 0.0,
+  installed_by      INT,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (installed_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_gateways_eui ON gateways (eui);
+CREATE INDEX idx_gateways_installed_by ON gateways (installed_by);
+
+-- -----------------------------------------
 -- LIGHTS
 -- -----------------------------------------
 CREATE TABLE lights (
@@ -52,10 +98,12 @@ CREATE TABLE lights (
   longitude          FLOAT NOT NULL,
   installer          INT NOT NULL,
   user_id            INT NOT NULL,
+  gateway_id         INT NULL,
   created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (installer) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_light_gateway FOREIGN KEY (gateway_id) REFERENCES gateways(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_lights_installer ON lights (installer);
@@ -74,6 +122,7 @@ CREATE TABLE schedules (
   start_time    TIME NOT NULL,
   stop_time     TIME NOT NULL,
   days_of_week  JSON, 
+  brightness    INT DEFAULT 100,
   is_active     BOOLEAN DEFAULT TRUE,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { animate, motion } from 'framer-motion';
+import { animate } from 'framer-motion';
 import { Plus} from 'lucide-react';
 import { KpiCard } from '../components/KpiCard';
 

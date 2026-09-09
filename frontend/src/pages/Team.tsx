@@ -58,6 +58,7 @@ export function Team() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (token) fetchData();
   }, [token]);
 

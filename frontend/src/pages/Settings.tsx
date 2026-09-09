@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import {
-  Sun, User, Lock, Trash2,
-  Save, AlertTriangle, CheckCircle, Bell, Shield,
-  Clock, Send
+  Sun, User, Lock, Save, Shield,
+  Clock
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { AddLightModal } from '../components/AddLightModal';
 
 const SERVER_IP = import.meta.env.VITE_SERVER_IP || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001');
 import { fetchWithAuth } from '../utils/api';
@@ -50,12 +48,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function Settings() {
-  const { isDarkMode, toggleTheme, username, logout, clearTelemetryHistory } = useAppStore();
-  const [addLightOpen, setAddLightOpen]   = useState(false);
+  const { isDarkMode, toggleTheme, username, logout } = useAppStore();
   const [notifications, setNotifications] = useState(true);
-  const [autoRefresh,   setAutoRefresh]   = useState(true);
-  const [saved,         setSaved]         = useState(false);
-  const [confirmReset,  setConfirmReset]  = useState(false);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -136,17 +130,6 @@ export function Settings() {
     } finally {
       setIsUpdatingProfile(false);
     }
-  };
-
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const handleHistoryClear = () => {
-    if (!confirmReset) { setConfirmReset(true); return; }
-    clearTelemetryHistory();
-    setConfirmReset(false);
   };
 
   const [delayValue, setDelayValue] = useState<number | ''>(20);

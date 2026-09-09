@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { TreePine, Zap, Cloud, Lightbulb } from 'lucide-react';
 
 interface KpiCardProps {
@@ -39,7 +39,7 @@ export function KpiCard({ title, value, trend, trendUp, onClick, sub, pulse, hov
 
   const IconComponent = hoverEffect ? hoverIcons[hoverEffect] : null;
 
-  const floatingVariants = {
+  const floatingVariants: Variants = {
     initial: { y: 20, opacity: 0, scale: 0.8 },
     hover: (i: number) => ({
       y: -100,
@@ -55,7 +55,7 @@ export function KpiCard({ title, value, trend, trendUp, onClick, sub, pulse, hov
   };
 
   return (
-    // @ts-ignore
+    // @ts-expect-error - motion.div accepts all div props but TS throws
     <Card 
       onClick={onClick}
       {...motionProps}
