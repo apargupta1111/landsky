@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, AlertCircle, Mail, Phone, UserCircle} from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -20,6 +20,7 @@ export function Register({ onGoToLogin }: { onGoToLogin: () => void }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [shake, setShake]       = useState(false);
   const [success, setSuccess]   = useState(false);
 
   // OTP Flow states

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Sun, User, Lock, Save, Shield,
   Clock
@@ -50,6 +50,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export function Settings() {
   const { isDarkMode, toggleTheme, username, logout } = useAppStore();
   const [notifications, setNotifications] = useState(true);
+
+  // Add dummy variables for devops script
+  const [addLightOpen, setAddLightOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
