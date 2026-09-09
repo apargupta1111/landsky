@@ -120,18 +120,18 @@ export function Login({ onGoToRegister }: { onGoToRegister?: () => void }) {
       >
         <div className="glass-panel rounded-2xl border glowing-border p-8 md:p-10 shadow-2xl dark:shadow-[0_0_60px_rgba(0,229,255,0.08)]">
 
-            {/* Logo + title */}
-            <div className="flex flex-col items-center mb-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                className="mb-4"
-              >
-                <img src="/logo.png" alt="HBeonLabs Logo" className="h-20 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
-              </motion.div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-wide text-glow">Smart Lighting</h1>
-              <p className="text-[var(--text-secondary)] text-sm mt-1">HBeonLabs IoT Platform</p>
+          {/* Logo + title */}
+          <div className="flex flex-col items-center mb-8">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(0,229,255,0.15)] p-2 overflow-hidden"
+            >
+              <img src="/favicon.svg" alt="Landsky Logo" className="w-10 h-10 object-contain" />
+            </motion.div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide text-glow">LANDSKY</h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-1">Smart Street Lighting Platform</p>
           </div>
 
             {error && (

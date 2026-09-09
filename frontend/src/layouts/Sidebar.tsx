@@ -190,15 +190,15 @@ export function Sidebar() {
       <div className="p-4 flex items-center justify-between h-16 md:h-20 shrink-0">
         <AnimatePresence>
           {sidebarOpen && (
-              <motion.div
-                key="logo"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="flex items-center"
-              >
-                <img src="/logo.png" alt="HBeonLabs Logo" className="h-8 object-contain" />
-              </motion.div>
+            <motion.div
+              key="logo"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="font-bold text-xl tracking-wider text-primary whitespace-nowrap"
+            >
+              LANDSKY
+            </motion.div>
           )}
         </AnimatePresence>
         <button
