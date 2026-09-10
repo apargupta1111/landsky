@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, AlertCircle, Mail, Phone, UserCircle} from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -390,3 +390,4 @@ export function Register({ onGoToLogin }: { onGoToLogin: () => void }) {
     </div>
   );
 }
+

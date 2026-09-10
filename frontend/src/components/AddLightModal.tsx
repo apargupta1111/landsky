@@ -49,7 +49,7 @@ export function AddLightModal({ isOpen, onClose }: AddLightModalProps) {
     if (isOpen && gateways.length === 0) {
       fetchGateways();
     }
-  }, [isOpen]);
+  }, [isOpen, gateways.length, fetchGateways]);
 
   const [name,         setName]         = useState('');
   const [serialNumber, setSerialNumber] = useState('');
