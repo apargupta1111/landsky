@@ -1,5 +1,5 @@
 -- ============================================================
--- Project: LandSky (MySQL Version)
+-- Project: landsky (MySQL Version)
 -- Converted from PostgreSQL to MySQL
 -- ============================================================
 

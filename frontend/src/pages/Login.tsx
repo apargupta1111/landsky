@@ -128,9 +128,9 @@ export function Login({ onGoToRegister }: { onGoToRegister?: () => void }) {
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
               className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(0,229,255,0.15)] p-2 overflow-hidden"
             >
-              <img src="/favicon.svg" alt="Landsky Logo" className="w-10 h-10 object-contain" />
+              <img src="/favicon.svg" alt="landsky Logo" className="w-10 h-10 object-contain" />
             </motion.div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-wide text-glow">LANDSKY</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide text-glow">landsky</h1>
             <p className="text-[var(--text-secondary)] text-sm mt-1">Smart Street Lighting Platform</p>
           </div>
 

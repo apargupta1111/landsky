@@ -32,7 +32,7 @@ export function Organization() {
             <div className="rounded-2xl bg-primary/10 p-3"><Building2 className="w-5 h-5" /></div>
             <div>
               <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Tenant</div>
-              <div className="text-xl font-bold">LANDSKY</div>
+              <div className="text-xl font-bold">landsky</div>
             </div>
           </div>
           <div className="space-y-3 text-sm text-[var(--text-secondary)]">

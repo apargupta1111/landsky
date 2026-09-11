@@ -197,7 +197,7 @@ export function Sidebar() {
               exit={{ opacity: 0, x: -10 }}
               className="font-bold text-xl tracking-wider text-primary whitespace-nowrap"
             >
-              LANDSKY
+              landsky
             </motion.div>
           )}
         </AnimatePresence>

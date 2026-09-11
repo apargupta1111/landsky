@@ -12,7 +12,7 @@ mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "=================================================="
-echo " LANDSKY PRODUCTION DEPLOYMENT"
+echo " landsky PRODUCTION DEPLOYMENT"
 echo " Started: $(date)"
 echo "=================================================="
 
@@ -68,7 +68,7 @@ fi
 echo "[6/10] Building frontend..."
 npm run build
 
-echo "[7/10] Restarting LANDSKY backend..."
+echo "[7/10] Restarting landsky backend..."
 pm2 restart landsky-backend-installer --update-env
 
 echo "[8/10] Saving PM2 configuration..."
@@ -88,6 +88,6 @@ echo "Deployed commit:"
 git rev-parse HEAD
 
 echo "=================================================="
-echo " LANDSKY DEPLOYMENT SUCCESSFUL"
+echo " landsky DEPLOYMENT SUCCESSFUL"
 echo " Finished: $(date)"
 echo "=================================================="

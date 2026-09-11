@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migration 001: Create gateways table
--- Run this in MySQL against the LANDSKY database
+-- Run this in MySQL against the landsky database
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS gateways (

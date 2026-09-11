@@ -154,7 +154,7 @@ export function Register({ onGoToLogin }: { onGoToLogin: () => void }) {
                   <User className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold tracking-wide text-glow mb-2">Create Account</h2>
-                <p className="text-sm text-[var(--text-secondary)]">Join the LandSky SmartLight network</p>
+                <p className="text-sm text-[var(--text-secondary)]">Join the landsky SmartLight network</p>
               </div>
 
               {error && (

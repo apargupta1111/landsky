@@ -1,5 +1,5 @@
 -- ============================================================
--- Project: LandSky
+-- Project: landsky
 -- Converted from DBML to PostgreSQL DDL for use in pgAdmin4
 -- ============================================================
 -- Changes from the original DBML in this version:
