@@ -20,7 +20,7 @@ export function Register({ onGoToLogin }: { onGoToLogin: () => void }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
-  const [shake, setShake]       = useState(false);
+  const [, setShake]            = useState(false);
   const [success, setSuccess]   = useState(false);
 
   // OTP Flow states
